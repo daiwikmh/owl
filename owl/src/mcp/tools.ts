@@ -5,6 +5,9 @@ export function registerOwlTools(server: McpServer) {
   registerAlertTools(server);
   registerTunnelTools(server);
   registerTerminalTools(server);
+  registerLedgerTools(server);
+  registerReportTools(server);
+  registerDryRunTools(server);
 }
 
 function registerAlertTools(server: McpServer) {
@@ -215,6 +218,111 @@ function registerTerminalTools(server: McpServer) {
     async () => {
       const { getTerminalStatus } = await import("../terminal/state.js");
       return getTerminalStatus();
+    }
+  );
+}
+
+function registerLedgerTools(server: McpServer) {
+  server.tool(
+    "owl_ledger_query",
+    "Query the activity ledger for past agent actions",
+    {
+      limit: z.number().optional().describe("Max entries (default 20)"),
+      tool: z.string().optional().describe("Filter by tool name"),
+      wallet: z.string().optional().describe("Filter by wallet"),
+      chain: z.string().optional().describe("Filter by chain"),
+      since: z.string().optional().describe("ISO date to start from"),
+      status: z.enum(["ok", "error"]).optional().describe("Filter by status"),
+    },
+    async (args) => {
+      const { queryLedger } = await import("../ledger/store.js");
+      const entries = queryLedger({ limit: args.limit ?? 20, tool: args.tool, wallet: args.wallet, chain: args.chain, since: args.since, status: args.status });
+      return { content: [{ type: "text" as const, text: JSON.stringify(entries, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "owl_ledger_stats",
+    "Get summary statistics from the activity ledger",
+    {
+      since: z.string().optional().describe("ISO date to start from"),
+    },
+    async (args) => {
+      const { ledgerStats } = await import("../ledger/store.js");
+      const stats = ledgerStats(args.since);
+      return { content: [{ type: "text" as const, text: JSON.stringify(stats, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "owl_ledger_export",
+    "Export the activity ledger as JSON or CSV",
+    {
+      format: z.enum(["json", "csv"]).describe("Export format"),
+      limit: z.number().optional().describe("Max entries"),
+      since: z.string().optional().describe("ISO date to start from"),
+    },
+    async (args) => {
+      const { exportLedger } = await import("../ledger/store.js");
+      const data = exportLedger({ format: args.format, limit: args.limit, since: args.since });
+      return { content: [{ type: "text" as const, text: data }] };
+    }
+  );
+
+  server.tool(
+    "owl_ledger_clear",
+    "Clear ledger entries (optionally before a date)",
+    {
+      before: z.string().optional().describe("Clear entries before this ISO date (clears all if omitted)"),
+    },
+    async (args) => {
+      const { clearLedger } = await import("../ledger/store.js");
+      clearLedger(args.before);
+      return { content: [{ type: "text" as const, text: args.before ? `Cleared entries before ${args.before}` : "Ledger cleared" }] };
+    }
+  );
+}
+
+function registerReportTools(server: McpServer) {
+  server.tool(
+    "owl_report_generate",
+    "Generate a spending report (daily, weekly, monthly) from the activity ledger",
+    {
+      period: z.enum(["daily", "weekly", "monthly"]).describe("Report period"),
+      wallet: z.string().optional().describe("Filter by wallet name"),
+    },
+    async (args) => {
+      const { generateReport } = await import("../reports/engine.js");
+      const report = await generateReport({ period: args.period, wallet: args.wallet });
+      return { content: [{ type: "text" as const, text: JSON.stringify(report, null, 2) }] };
+    }
+  );
+
+  server.tool(
+    "owl_portfolio_all",
+    "Get a unified portfolio view across all wallets and all chains",
+    async () => {
+      const { portfolioAll } = await import("../reports/engine.js");
+      const result = await portfolioAll();
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+}
+
+function registerDryRunTools(server: McpServer) {
+  server.tool(
+    "owl_dryrun",
+    "Simulate a transaction (swap, transfer, bridge) without broadcasting. Uses mp CLI simulation mode.",
+    {
+      operation: z.enum(["swap", "transfer", "bridge"]).describe("Operation to simulate"),
+      wallet: z.string().describe("Wallet name"),
+      chain: z.string().describe("Chain name"),
+      params: z.record(z.string()).describe("Operation params (from_token, from_amount, to_token, etc)"),
+    },
+    async (args) => {
+      const { dryRun } = await import("../reports/engine.js");
+      const result = await dryRun({ operation: args.operation, wallet: args.wallet, chain: args.chain, params: args.params });
+      return { content: [{ type: "text" as const, text: JSON.stringify(result, null, 2) }] };
     }
   );
 }

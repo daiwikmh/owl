@@ -1,490 +1,102 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { render, Box, Text, useInput, useApp } from "ink";
-import TextInput from "ink-text-input";
+import * as readline from "node:readline";
+import { loadState, saveState } from "./state.js";
+import { loadAgentConfig, saveAgentConfig, getProviderList, getDefaultModel, type AgentConfig } from "./agent-config.js";
+import { runAgent, type ChatMessage } from "./agent.js";
 import { execMp } from "../mp.js";
-import { loadState, saveState, addActivity, type TerminalState } from "./state.js";
-import { executeCommand } from "./commands.js";
-import { tunnelEvents } from "../tunnel/host.js";
-import {
-  loadAgentConfig,
-  saveAgentConfig,
-  getProviderList,
-  getDefaultModel,
-  type AgentConfig,
-} from "./agent-config.js";
+
+const R  = "\x1b[0m";
+const B  = "\x1b[1m";
+const D  = "\x1b[2m";
+const CY = "\x1b[36m";
+const GR = "\x1b[32m";
+const YE = "\x1b[33m";
+const BL = "\x1b[34m";
+const RE = "\x1b[31m";
+const MA = "\x1b[35m";
 
 const OWL_ASCII = `
-    ,___,
-    (o,o)
-    /)  )
-  --"-"--
-   O W L
+${CY}${B}  /$$$$$$  /$$      /$$ /$$           ${R}   ${YE}   ,___.   ${R}
+${CY}${B} /$$__  $$| $$  /$ | $$| $$           ${R}   ${YE}  (o . o)  ${R}
+${CY}${B}| $$  \\ $$| $$ /$$$| $$| $$           ${R}   ${YE}  /)   )   ${R}
+${CY}${B}| $$  | $$| $$/$$ $$ $$| $$           ${R}   ${YE} --"-"--   ${R}
+${CY}${B}| $$  | $$| $$$$_  $$$$| $$           ${R}
+${CY}${B}| $$  | $$| $$$/ \\  $$$| $$           ${R}
+${CY}${B}|  $$$$$$/| $$/   \\  $$| $$$$$$$$     ${R}
+${CY}${B} \\______/ |__/     \\__/|________/     ${R}
+${D}           powered by moonpay${R}
 `;
 
-interface PortfolioEntry {
-  symbol: string;
-  balance: string;
-  value: string;
+function ln(text = "") { process.stdout.write(text + "\n"); }
+
+function printBanner(wallet: string, agentConfig: AgentConfig | null) {
+  ln(OWL_ASCII);
+  ln(`  ${D}wallet: ${GR}${wallet}${R}${D}  ·  ${agentConfig ? `${agentConfig.provider}/${agentConfig.model}` : "no agent"}${R}`);
+  ln(`  ${D}type "exit" to quit  ·  "agent setup" to configure agent${R}`);
+  ln(`  ${D}${"─".repeat(56)}${R}`);
+  ln();
 }
 
-// Agent setup wizard
-type SetupStep = "provider" | "model" | "apikey" | "confirm";
+async function showPortfolio(wallet: string) {
+  try {
+    const out = await execMp(["token", "balance", "list", "--wallet", wallet, "--chain", "solana", "-f", "compact"]);
+    const data = JSON.parse(out);
+    if (Array.isArray(data) && data.length > 0) {
+      ln(`${D}  portfolio:${R}`);
+      for (const t of data) {
+        ln(`${D}    ${t.symbol ?? "???"}: ${t.balance ?? 0}  $${parseFloat(t.valueUsd ?? t.value_usd ?? "0").toFixed(2)}${R}`);
+      }
+    } else {
+      ln(`${D}  no balances found${R}`);
+    }
+  } catch {
+    ln(`${D}  portfolio unavailable${R}`);
+  }
+  ln();
+}
 
-function AgentSetup({
-  onComplete,
-  onSkip,
-}: {
-  onComplete: (config: AgentConfig) => void;
-  onSkip: () => void;
-}) {
-  const [step, setStep] = useState<SetupStep>("provider");
-  const [provider, setProvider] = useState("");
-  const [model, setModel] = useState("");
-  const [apiKey, setApiKey] = useState("");
-  const [input, setInput] = useState("");
+async function agentSetup(rl: readline.Interface): Promise<AgentConfig | null> {
   const providers = getProviderList();
 
-  useInput((_ch, key) => {
-    if (key.escape) {
-      onSkip();
-    }
-  });
+  const ask = (q: string) => new Promise<string>((res) => rl.question(q, res));
 
-  const handleSubmit = (value: string) => {
-    const v = value.trim();
-    setInput("");
+  ln();
+  ln(`${CY}${B}  Agent Setup${R}`);
+  ln(`${D}  ${"─".repeat(40)}${R}`);
+  ln(`  Providers:`);
+  providers.forEach((p, i) => ln(`    ${YE}${i + 1}${R}. ${p}`));
+  ln();
 
-    if (step === "provider") {
-      const idx = parseInt(v);
-      if (idx >= 1 && idx <= providers.length) {
-        const selected = providers[idx - 1];
-        setProvider(selected);
-        setModel(getDefaultModel(selected));
-        setStep("model");
-      } else if (providers.includes(v.toLowerCase())) {
-        setProvider(v.toLowerCase());
-        setModel(getDefaultModel(v.toLowerCase()));
-        setStep("model");
-      }
-      return;
-    }
-
-    if (step === "model") {
-      if (v) setModel(v);
-      setStep("apikey");
-      return;
-    }
-
-    if (step === "apikey") {
-      if (v) setApiKey(v);
-      setStep("confirm");
-      return;
-    }
-
-    if (step === "confirm") {
-      if (v.toLowerCase() === "y" || v.toLowerCase() === "yes" || v === "") {
-        const config: AgentConfig = {
-          provider: provider as AgentConfig["provider"],
-          model,
-          apiKey,
-        };
-        saveAgentConfig(config);
-        onComplete(config);
-      } else {
-        setStep("provider");
-        setProvider("");
-        setModel("");
-        setApiKey("");
-      }
-    }
-  };
-
-  return (
-    <Box flexDirection="column" paddingX={2} paddingY={1}>
-      <Text color="cyan">{OWL_ASCII}</Text>
-      <Text bold color="cyan">
-        Agent Setup
-      </Text>
-      <Text dimColor>Connect an AI agent to your terminal (ESC to skip)</Text>
-      <Text> </Text>
-
-      {step === "provider" && (
-        <Box flexDirection="column">
-          <Text bold>Select a provider:</Text>
-          {providers.map((p, i) => (
-            <Text key={p}>
-              {"  "}
-              <Text color="yellow">{i + 1}</Text>. {p}
-            </Text>
-          ))}
-          <Text> </Text>
-          <Box>
-            <Text color="green">{">"} </Text>
-            <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-          </Box>
-        </Box>
-      )}
-
-      {step === "model" && (
-        <Box flexDirection="column">
-          <Text>
-            Provider: <Text color="green">{provider}</Text>
-          </Text>
-          <Text>
-            Model (enter for default: <Text color="yellow">{model}</Text>):
-          </Text>
-          <Text> </Text>
-          <Box>
-            <Text color="green">{">"} </Text>
-            <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-          </Box>
-        </Box>
-      )}
-
-      {step === "apikey" && (
-        <Box flexDirection="column">
-          <Text>
-            Provider: <Text color="green">{provider}</Text>
-          </Text>
-          <Text>
-            Model: <Text color="green">{model}</Text>
-          </Text>
-          <Text>Enter API key:</Text>
-          <Text> </Text>
-          <Box>
-            <Text color="green">{">"} </Text>
-            <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-          </Box>
-        </Box>
-      )}
-
-      {step === "confirm" && (
-        <Box flexDirection="column">
-          <Text bold>Confirm agent config:</Text>
-          <Text>
-            {"  "}Provider: <Text color="green">{provider}</Text>
-          </Text>
-          <Text>
-            {"  "}Model: <Text color="green">{model}</Text>
-          </Text>
-          <Text>
-            {"  "}API Key: <Text color="green">{apiKey ? apiKey.slice(0, 8) + "..." : "(none)"}</Text>
-          </Text>
-          <Text> </Text>
-          <Text>Save? (Y/n)</Text>
-          <Box>
-            <Text color="green">{">"} </Text>
-            <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-          </Box>
-        </Box>
-      )}
-    </Box>
-  );
-}
-
-function Header({
-  wallet,
-  totalValue,
-  agentConfig,
-}: {
-  wallet: string;
-  totalValue: string;
-  agentConfig: AgentConfig | null;
-}) {
-  return (
-    <Box flexDirection="column" borderStyle="single" borderColor="cyan" paddingX={1}>
-      <Box justifyContent="space-between">
-        <Text bold color="cyan">
-          OWL Terminal
-        </Text>
-        <Text>
-          wallet: <Text color="green">{wallet}</Text>
-        </Text>
-        {agentConfig && (
-          <Text>
-            agent: <Text color="magenta">{agentConfig.provider}/{agentConfig.model}</Text>
-          </Text>
-        )}
-        <Text>
-          total: <Text color="yellow" bold>${totalValue}</Text>
-        </Text>
-      </Box>
-    </Box>
-  );
-}
-
-function Portfolio({ entries }: { entries: PortfolioEntry[] }) {
-  return (
-    <Box flexDirection="column" borderStyle="single" borderColor="blue" paddingX={1} minHeight={5}>
-      <Text bold color="blue">
-        Portfolio
-      </Text>
-      {entries.length === 0 ? (
-        <Text dimColor>Loading balances...</Text>
-      ) : (
-        entries.map((e, i) => (
-          <Box key={i} justifyContent="space-between" width="100%">
-            <Text>{e.symbol}</Text>
-            <Text>{e.balance}</Text>
-            <Text color="green">${e.value}</Text>
-          </Box>
-        ))
-      )}
-    </Box>
-  );
-}
-
-function ActivityFeed({
-  items,
-}: {
-  items: Array<{ type: string; message: string; timestamp: string }>;
-}) {
-  const typeColors: Record<string, string> = {
-    ALERT: "yellow",
-    TUNNEL: "magenta",
-    POLICY: "cyan",
-    TX: "green",
-    ERROR: "red",
-    INFO: "white",
-    AGENT: "blue",
-  };
-
-  return (
-    <Box flexDirection="column" borderStyle="single" borderColor="yellow" paddingX={1} minHeight={6}>
-      <Text bold color="yellow">
-        Activity
-      </Text>
-      {items.length === 0 ? (
-        <Text dimColor>No activity yet</Text>
-      ) : (
-        items.slice(0, 8).map((item, i) => (
-          <Text key={i}>
-            <Text dimColor>{item.timestamp.split("T")[1]?.slice(0, 8) ?? ""}</Text>{" "}
-            <Text color={typeColors[item.type] ?? "white"}>[{item.type}]</Text> {item.message}
-          </Text>
-        ))
-      )}
-    </Box>
-  );
-}
-
-function Splash() {
-  return (
-    <Box flexDirection="column" alignItems="center" paddingY={1}>
-      <Text color="cyan">{OWL_ASCII}</Text>
-      <Text dimColor>Infrastructure extensions for MoonPay OWS</Text>
-      <Text dimColor>Type "help" for commands</Text>
-    </Box>
-  );
-}
-
-function App({ wallet }: { wallet: string }) {
-  const { exit } = useApp();
-  const [input, setInput] = useState("");
-  const [portfolio, setPortfolio] = useState<PortfolioEntry[]>([]);
-  const [totalValue, setTotalValue] = useState("0.00");
-  const [activity, setActivity] = useState<TerminalState["activity"]>([]);
-  const [showSplash, setShowSplash] = useState(true);
-  const [showAgentSetup, setShowAgentSetup] = useState(false);
-  const [agentConfig, setAgentConfig] = useState<AgentConfig | null>(null);
-  const [commandOutput, setCommandOutput] = useState<string | null>(null);
-
-  // Check for existing agent config on mount
-  useEffect(() => {
-    const existing = loadAgentConfig();
-    if (existing) {
-      setAgentConfig(existing);
-    }
-
-    const state = loadState();
-    setActivity(state.activity);
-
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-      // If no agent config, prompt setup
-      if (!existing) {
-        setShowAgentSetup(true);
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Poll balances
-  useEffect(() => {
-    const fetchBalances = async () => {
-      try {
-        const output = await execMp([
-          "token", "balance", "list",
-          "--wallet", wallet,
-          "--chain", "solana",
-          "-f", "compact",
-        ]);
-
-        const data = JSON.parse(output);
-        if (Array.isArray(data)) {
-          let total = 0;
-          const entries: PortfolioEntry[] = data.map((t: any) => {
-            const val = parseFloat(t.valueUsd ?? t.value_usd ?? "0");
-            total += val;
-            return {
-              symbol: t.symbol ?? t.token ?? "???",
-              balance: String(t.balance ?? t.amount ?? "0"),
-              value: val.toFixed(2),
-            };
-          });
-          setPortfolio(entries);
-          setTotalValue(total.toFixed(2));
-        }
-      } catch {
-        // mp not available
-      }
-    };
-
-    fetchBalances();
-    const interval = setInterval(fetchBalances, 30_000);
-    return () => clearInterval(interval);
-  }, [wallet]);
-
-  // Listen for tunnel events
-  useEffect(() => {
-    const onPeer = (address: string) => {
-      const entry = {
-        type: "TUNNEL",
-        message: `Peer connected: ${address}`,
-        timestamp: new Date().toISOString(),
-      };
-      addActivity("TUNNEL", entry.message);
-      setActivity((prev) => [entry, ...prev].slice(0, 100));
-    };
-
-    const onProposal = (proposal: any) => {
-      const entry = {
-        type: "TUNNEL",
-        message: `Proposal: ${proposal.operation} from ${proposal.peer.slice(0, 8)}...`,
-        timestamp: new Date().toISOString(),
-      };
-      addActivity("TUNNEL", entry.message);
-      setActivity((prev) => [entry, ...prev].slice(0, 100));
-    };
-
-    tunnelEvents.on("peer_connected", onPeer);
-    tunnelEvents.on("proposal_pending", onProposal);
-
-    return () => {
-      tunnelEvents.off("peer_connected", onPeer);
-      tunnelEvents.off("proposal_pending", onProposal);
-    };
-  }, []);
-
-  const handleSubmit = useCallback(
-    async (value: string) => {
-      const trimmed = value.trim();
-      setInput("");
-
-      if (!trimmed) return;
-
-      if (trimmed === "exit" || trimmed === "quit") {
-        exit();
-        return;
-      }
-
-      if (trimmed === "clear") {
-        setCommandOutput(null);
-        return;
-      }
-
-      // Agent setup/reconfigure commands
-      if (trimmed === "agent setup" || trimmed === "agent config") {
-        setShowAgentSetup(true);
-        return;
-      }
-
-      if (trimmed === "agent status") {
-        if (agentConfig) {
-          setCommandOutput(
-            `Agent: ${agentConfig.provider}/${agentConfig.model}\nAPI Key: ${agentConfig.apiKey.slice(0, 8)}...`
-          );
-        } else {
-          setCommandOutput('No agent configured. Type "agent setup" to configure.');
-        }
-        return;
-      }
-
-      if (trimmed === "agent disconnect") {
-        setAgentConfig(null);
-        setCommandOutput("Agent disconnected");
-        return;
-      }
-
-      const entry = { type: "INFO", message: `> ${trimmed}`, timestamp: new Date().toISOString() };
-      setActivity((prev) => [entry, ...prev].slice(0, 100));
-
-      try {
-        const result = await executeCommand(trimmed, wallet);
-        if (result) {
-          setCommandOutput(result);
-        }
-      } catch (err) {
-        const errEntry = {
-          type: "ERROR",
-          message: (err as Error).message,
-          timestamp: new Date().toISOString(),
-        };
-        setActivity((prev) => [errEntry, ...prev].slice(0, 100));
-      }
-    },
-    [wallet, exit, agentConfig]
-  );
-
-  useInput((ch, key) => {
-    if (key.ctrl && ch === "c") {
-      exit();
-    }
-  });
-
-  if (showSplash) {
-    return <Splash />;
+  const provInput = (await ask(`${B}${BL}provider${R} › `)).trim();
+  const idx = parseInt(provInput);
+  let provider: string;
+  if (idx >= 1 && idx <= providers.length) {
+    provider = providers[idx - 1];
+  } else if (providers.includes(provInput.toLowerCase())) {
+    provider = provInput.toLowerCase();
+  } else {
+    ln(`${RE}  Invalid provider${R}`);
+    return null;
   }
 
-  if (showAgentSetup) {
-    return (
-      <AgentSetup
-        onComplete={(config) => {
-          setAgentConfig(config);
-          setShowAgentSetup(false);
-          const entry = {
-            type: "AGENT",
-            message: `Connected: ${config.provider}/${config.model}`,
-            timestamp: new Date().toISOString(),
-          };
-          addActivity("AGENT", entry.message);
-          setActivity((prev) => [entry, ...prev].slice(0, 100));
-        }}
-        onSkip={() => setShowAgentSetup(false)}
-      />
-    );
-  }
+  const defaultModel = getDefaultModel(provider);
+  const modelInput = (await ask(`${B}${BL}model${R} › [${defaultModel}] `)).trim();
+  const model = modelInput || defaultModel;
 
-  return (
-    <Box flexDirection="column" width="100%">
-      <Header wallet={wallet} totalValue={totalValue} agentConfig={agentConfig} />
-      <Portfolio entries={portfolio} />
-      <ActivityFeed items={activity} />
+  const apiKey = (await ask(`${B}${BL}api key${R} › `)).trim();
+  if (!apiKey) { ln(`${RE}  API key required${R}`); return null; }
 
-      {commandOutput && (
-        <Box borderStyle="single" borderColor="gray" paddingX={1} flexDirection="column">
-          <Text>{commandOutput}</Text>
-        </Box>
-      )}
+  ln();
+  ln(`  ${D}provider: ${GR}${provider}${R}`);
+  ln(`  ${D}model:    ${GR}${model}${R}`);
+  ln(`  ${D}api key:  ${GR}${apiKey.slice(0, 8)}...${R}`);
+  ln();
 
-      <Box borderStyle="single" borderColor="green" paddingX={1}>
-        <Text color="green" bold>
-          {">"}{" "}
-        </Text>
-        <TextInput value={input} onChange={setInput} onSubmit={handleSubmit} />
-      </Box>
-    </Box>
-  );
+  const confirm = (await ask(`${B}${BL}save?${R} › [Y/n] `)).trim().toLowerCase();
+  if (confirm === "n" || confirm === "no") return null;
+
+  const config: AgentConfig = { provider: provider as AgentConfig["provider"], model, apiKey };
+  saveAgentConfig(config);
+  return config;
 }
 
 export async function startTerminal(wallet: string) {
@@ -492,5 +104,123 @@ export async function startTerminal(wallet: string) {
   state.wallet = wallet;
   saveState(state);
 
-  render(<App wallet={wallet} />);
+  let agentConfig = loadAgentConfig();
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  const prompt = () =>
+    new Promise<string>((resolve, reject) => {
+      rl.question(`${B}${BL}you${R} › `, resolve);
+      rl.once("close", () => reject(new Error("closed")));
+    });
+
+  printBanner(wallet, agentConfig);
+  await showPortfolio(wallet);
+
+  if (!agentConfig) {
+    ln(`${YE}  No agent configured. Run "agent setup" to connect an AI agent.${R}`);
+    ln();
+  }
+
+  const history: ChatMessage[] = [];
+
+  while (true) {
+    let input: string;
+    try {
+      input = (await prompt()).trim();
+    } catch {
+      break;
+    }
+
+    if (!input) continue;
+
+    if (input === "exit" || input === "quit") {
+      ln(`${D}Goodbye.${R}`);
+      rl.close();
+      process.exit(0);
+    }
+
+    if (input === "clear") {
+      process.stdout.write("\x1b[2J\x1b[H");
+      printBanner(wallet, agentConfig);
+      continue;
+    }
+
+    if (input === "agent setup" || input === "agent config") {
+      const config = await agentSetup(rl);
+      if (config) {
+        agentConfig = config;
+        history.length = 0;
+        ln(`${GR}  Agent configured: ${config.provider}/${config.model}${R}`);
+        ln();
+      }
+      continue;
+    }
+
+    if (input === "agent status") {
+      if (agentConfig) {
+        ln(`${D}  ${agentConfig.provider}/${agentConfig.model}${R}`);
+      } else {
+        ln(`${D}  no agent configured${R}`);
+      }
+      ln();
+      continue;
+    }
+
+    if (input === "agent disconnect") {
+      agentConfig = null;
+      history.length = 0;
+      ln(`${D}  agent disconnected${R}`);
+      ln();
+      continue;
+    }
+
+    if (input === "portfolio") {
+      await showPortfolio(wallet);
+      continue;
+    }
+
+    if (input === "help") {
+      ln(`${D}  Just chat naturally. Examples:${R}`);
+      ln(`${D}    "show my portfolio"${R}`);
+      ln(`${D}    "swap 10 USDC to SOL"${R}`);
+      ln(`${D}    "set an alert for SOL above $200"${R}`);
+      ln(`${D}    "what are trending tokens on base?"${R}`);
+      ln();
+      ln(`${D}  Meta-commands:${R}`);
+      ln(`${D}    agent setup      configure AI agent${R}`);
+      ln(`${D}    agent status     show agent config${R}`);
+      ln(`${D}    agent disconnect disconnect agent${R}`);
+      ln(`${D}    portfolio        refresh portfolio${R}`);
+      ln(`${D}    clear            clear screen${R}`);
+      ln(`${D}    exit / quit      exit${R}`);
+      ln();
+      continue;
+    }
+
+    if (!agentConfig) {
+      ln(`${RE}  No agent configured. Type "agent setup" to connect one.${R}`);
+      ln();
+      continue;
+    }
+
+    try {
+      await runAgent(
+        agentConfig,
+        input,
+        history,
+        () => process.stdout.write(`${D}  thinking...${R}\n`),
+        (name, args) => process.stdout.write(`${D}  ↳  ${MA}${name}${R}${D} ${JSON.stringify(args)}${R}\n`),
+        (_name, result) => process.stdout.write(`${D}     ${result.slice(0, 300)}${result.length > 300 ? "…" : ""}${R}\n`),
+        (text) => { ln(); ln(`${B}${GR}owl${R} › ${text}`); ln(); },
+        () => {},
+        (err) => { ln(`${RE}  Error: ${err}${R}`); ln(); },
+      );
+    } catch (err) {
+      ln(`${RE}  Error: ${(err as Error).message}${R}`);
+      ln();
+    }
+  }
+
+  rl.close();
 }

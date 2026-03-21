@@ -2,7 +2,7 @@
 
 Infrastructure extensions for MoonPay's Open Wallet Standard (OWS).
 
-Three primitives that turn MoonPay's wallet layer into a multi-agent coordination platform: **Terminal**, **Tunnel**, and **Alerts**.
+Six primitives that turn MoonPay's wallet layer into a multi-agent coordination platform: **Terminal**, **Tunnel**, **Alerts**, **Activity Ledger**, **Dry Run**, and **Reports**.
 
 ## Architecture
 
@@ -18,7 +18,7 @@ Three primitives that turn MoonPay's wallet layer into a multi-agent coordinatio
                          |     owl mcp          |
                          |  +---------------+   |
                          |  | owl tools     |   |
-                         |  | (15 custom)   |   |
+                         |  | (22 custom)   |   |
                          |  +-------+-------+   |
                          |          |           |
                          |  +-------v-------+   |
@@ -42,7 +42,7 @@ Three primitives that turn MoonPay's wallet layer into a multi-agent coordinatio
                   BNB
 ```
 
-Agents connect to `owl mcp` which acts as a single gateway. All MoonPay tools are proxied transparently. OWL adds 15 tools on top for tunnel, alert, and terminal operations.
+Agents connect to `owl mcp` which acts as a single gateway. All MoonPay tools are proxied transparently. OWL adds 22 tools on top for tunnel, alert, terminal, ledger, report, and dry-run operations.
 
 ## Terminal
 
@@ -185,6 +185,91 @@ Cross-device price monitoring via Telegram and webhooks.
 | `percent_change` | % move in time window |
 | `balance_below` | Wallet balance drops |
 
+## Activity Ledger
+
+SQLite-backed audit trail of every tool call made by any agent.
+
+```
+  Agent calls tool
+        |
+        v
+  +-----+------+
+  | Log entry  |  tool, args, result, wallet, chain, status, timestamp
+  +-----+------+
+        |
+        v
+  ~/.config/owl/ledger.db
+        |
+  +-----+------+-----+------+
+  |            |             |
+  query      stats        export
+  (filter)   (summary)   (JSON/CSV)
+```
+
+Every tool invocation (owl_* and mp_*) is recorded automatically. Query, aggregate, or export for compliance and debugging.
+
+## Terminal Agent Tools
+
+The terminal agent has access to all 22 OWL tools plus 13 MoonPay tools via the configured LLM:
+
+| MoonPay Tool | Description |
+|-------------|-------------|
+| `mp_token_balance` | Check token balances |
+| `mp_token_swap` | Swap tokens |
+| `mp_token_transfer` | Transfer tokens |
+| `mp_token_search` | Search for tokens |
+| `mp_token_trending` | Get trending tokens |
+| `mp_token_bridge` | Bridge tokens cross-chain |
+| `mp_token_retrieve` | Get token price/details |
+| `mp_transaction_list` | List transactions |
+| `mp_wallet_list` | List wallets |
+| `mp_wallet_create` | Create a new wallet |
+| `mp_message_sign` | Sign a message |
+| `mp_buy` | Buy crypto with fiat |
+| `mp_deposit_create` | Create a deposit address |
+
+All tool calls are logged to the Activity Ledger automatically.
+
+## Dry Run Environment
+
+Simulate any write operation before broadcasting. Uses MoonPay CLI's `--simulation true` flag under the hood.
+
+```
+  User: "dry run swap 10 USDC to SOL"
+        |
+        v
+  +-----+------+
+  | owl dryrun |  --simulation true
+  +-----+------+
+        |
+        v
+  +-----+------+
+  | mp token   |  builds tx, gets quote
+  | swap       |  does NOT broadcast
+  +-----+------+
+        |
+        v
+  Returns: quote, fees, expected output
+```
+
+Supports swap, transfer, and bridge operations. The agent can show the user what would happen before they commit.
+
+```bash
+npx moonpay-owl dryrun swap -w main -c solana --from USDC --amount 10 --to SOL
+```
+
+## Spending Reports
+
+Aggregate ledger data into actionable summaries.
+
+```bash
+npx moonpay-owl report daily            # today's swaps, transfers, errors
+npx moonpay-owl report weekly -w main   # last 7 days for a wallet
+npx moonpay-owl report portfolio        # all wallets, all chains, unified view
+```
+
+Reports include operation breakdown (swaps, transfers, bridges), chain distribution, error rate, and recent write operations. The agent can generate these on demand: "show me my weekly report."
+
 ## How It Builds on MoonPay
 
 OWL is a partner extension, not a fork. It follows the same pattern as Messari, Polymarket, and Myriad in the MoonPay skills ecosystem.
@@ -198,7 +283,8 @@ OWL is a partner extension, not a fork. It follows the same pattern as Messari, 
   |  messari-x402    myriad-prediction        |
   |                                           |
   |  owl-terminal    owl-tunnel               |  <-- our skills
-  |  owl-alerts                               |
+  |  owl-alerts      owl-ledger              |
+  |  owl-reports     owl-dryrun              |
   +------------------------------------------+
               |
               | agents load skills
@@ -250,6 +336,17 @@ npx moonpay-owl terminal --wallet main
 | `npx moonpay-owl alert remove` | Remove an alert |
 | `npx moonpay-owl alert daemon` | Start alert monitoring |
 | `npx moonpay-owl alert channels` | Configure Telegram / webhook |
+| `npx moonpay-owl ledger list` | Show recent ledger entries |
+| `npx moonpay-owl ledger stats` | Show ledger statistics |
+| `npx moonpay-owl ledger export` | Export ledger (JSON/CSV) |
+| `npx moonpay-owl ledger clear` | Clear ledger entries |
+| `npx moonpay-owl report daily` | Today's spending report |
+| `npx moonpay-owl report weekly` | Last 7 days report |
+| `npx moonpay-owl report monthly` | Last 30 days report |
+| `npx moonpay-owl report portfolio` | All wallets, all chains view |
+| `npx moonpay-owl dryrun swap` | Simulate a swap |
+| `npx moonpay-owl dryrun transfer` | Simulate a transfer |
+| `npx moonpay-owl dryrun bridge` | Simulate a bridge |
 
 ## MCP Tools
 
@@ -272,6 +369,13 @@ All tools are prefixed `owl_` to avoid conflicts with MoonPay's tools.
 | `owl_alert_history` | View triggered alerts |
 | `owl_terminal_start` | Start terminal |
 | `owl_terminal_status` | Get terminal state |
+| `owl_ledger_query` | Query ledger entries |
+| `owl_ledger_stats` | Get ledger statistics |
+| `owl_ledger_export` | Export ledger (JSON/CSV) |
+| `owl_ledger_clear` | Clear ledger entries |
+| `owl_report_generate` | Generate spending report (daily/weekly/monthly) |
+| `owl_portfolio_all` | Unified portfolio across all wallets and chains |
+| `owl_dryrun` | Simulate swap/transfer/bridge without broadcasting |
 
 ## License
 
