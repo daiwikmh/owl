@@ -1,0 +1,39 @@
+{
+  "name": "moonpay-owl",
+  "version": "0.1.0",
+  "description": "Infrastructure extensions for MoonPay OWS: terminal, tunnel, and alerts",
+  "type": "module",
+  "license": "CC0-1.0",
+  "files": [
+    "dist"
+  ],
+  "bin": {
+    "owl": "./dist/cli.js"
+  },
+  "scripts": {
+    "prepublishOnly": "tsup",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "better-sqlite3": "^11.8.1",
+    "commander": "^13.1.0",
+    "grammy": "^1.35.0",
+    "ink": "^5.2.0",
+    "ink-text-input": "^6.0.0",
+    "react": "^18.3.1",
+    "tweetnacl": "^1.0.3",
+    "ws": "^8.18.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.15.0",
+    "@types/react": "^18.3.18",
+    "@types/ws": "^8.18.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.0"
+  }
+}
