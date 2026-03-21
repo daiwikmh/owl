@@ -1,0 +1,36 @@
+/* --- Landing border glows --- */
+
+.border-glow-cyan {
+  box-shadow: 0 0 5px rgba(0, 255, 245, 0.15), inset 0 0 5px rgba(0, 255, 245, 0.05);
+}
+
+.border-glow-magenta {
+  box-shadow: 0 0 5px rgba(255, 0, 229, 0.15), inset 0 0 5px rgba(255, 0, 229, 0.05);
+}
+
+/* --- How It Works & Developers section animations --- */
+
+@keyframes how-progress {
+  from { width: 0; }
+  to   { width: 100%; }
+}
+
+@keyframes how-line-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes how-char-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.how-code-line,
+.dev-code-line {
+  animation: how-line-in 0.3s ease-out both;
+}
+
+.how-code-char,
+.dev-code-char {
+  animation: how-char-in 0.2s ease-out both;
+}

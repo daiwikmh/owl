@@ -1,0 +1,153 @@
+@import "tailwindcss";
+
+/* --- Fonts --- */
+
+@font-face {
+  font-family: 'Sentient';
+  src: url('/Sentient-Extralight.woff') format('woff');
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Sentient';
+  src: url('/Sentient-LightItalic.woff') format('woff');
+  font-weight: 300;
+  font-style: italic;
+  font-display: swap;
+}
+
+/* --- Design tokens --- */
+
+:root {
+  --neon-cyan: #00fff5;
+  --neon-magenta: #ff00e5;
+  --neon-green: #39ff14;
+  --neon-purple: #b026ff;
+  --neon-yellow: #f5ff00;
+  --neon-orange: #ff6600;
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #00fff5;
+  --primary-foreground: #ffffff;
+  --border: #424242;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #12121a;
+  --bg-card: #1a1a2e;
+  --bg-card-hover: #22223a;
+  --border-dim: #2a2a3e;
+  --text-primary: #e0e0f0;
+  --text-secondary: #8888aa;
+  --text-muted: #555570;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@theme inline {
+  --color-neon-cyan: var(--neon-cyan);
+  --color-neon-magenta: var(--neon-magenta);
+  --color-neon-green: var(--neon-green);
+  --color-neon-purple: var(--neon-purple);
+  --color-neon-yellow: var(--neon-yellow);
+  --color-neon-orange: var(--neon-orange);
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-card: var(--bg-card);
+  --color-bg-card-hover: var(--bg-card-hover);
+  --color-border-dim: var(--border-dim);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-sentient: 'Sentient', sans-serif;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-border: var(--border);
+  --shadow-glow: 0 0 8px 2px var(--tw-shadow-color);
+}
+
+/* --- Layout utilities --- */
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+
+  @media (width >= 768px) {
+    padding-inline: 2rem;
+  }
+
+  @media (width >= 1280px) {
+    padding-inline: 3rem;
+  }
+}
+
+/* --- Base --- */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-dim) transparent;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: rgba(0, 255, 245, 0.2);
+  color: var(--neon-cyan);
+}
+
+code {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* --- Shared utilities --- */
+
+.glow-cyan {
+  text-shadow: 0 0 7px var(--neon-cyan), 0 0 20px rgba(0, 255, 245, 0.3);
+}
+
+.glow-magenta {
+  text-shadow: 0 0 7px var(--neon-magenta), 0 0 20px rgba(255, 0, 229, 0.3);
+}
+
+.glow-green {
+  text-shadow: 0 0 7px var(--neon-green), 0 0 20px rgba(57, 255, 20, 0.3);
+}
+
+.glow-purple {
+  text-shadow: 0 0 7px var(--neon-purple), 0 0 20px rgba(176, 38, 255, 0.3);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, var(--neon-cyan), var(--neon-magenta));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.code-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-dim);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.code-block code {
+  color: var(--text-primary);
+}
+
+.code-block .comment { color: var(--text-muted); }
+.code-block .keyword { color: var(--neon-magenta); }
+.code-block .string  { color: var(--neon-green); }
+.code-block .flag    { color: var(--neon-cyan); }
+.code-block .cmd     { color: var(--neon-yellow); }
