@@ -40,6 +40,34 @@ const sections = [
           { title: "Conditions", href: "/docs/alerts#condition-types" },
         ],
       },
+      {
+        title: "Activity Ledger",
+        href: "/docs/activity-ledger",
+        children: [
+          { title: "CLI Commands", href: "/docs/activity-ledger#cli-commands" },
+          { title: "Statistics", href: "/docs/activity-ledger#stats" },
+          { title: "Export", href: "/docs/activity-ledger#export-formats" },
+          { title: "MCP Tools", href: "/docs/activity-ledger#mcp-tools" },
+        ],
+      },
+      {
+        title: "Dry Run",
+        href: "/docs/dryrun",
+        children: [
+          { title: "owl dryrun swap", href: "/docs/dryrun#swap" },
+          { title: "owl dryrun transfer", href: "/docs/dryrun#transfer" },
+          { title: "owl dryrun bridge", href: "/docs/dryrun#bridge" },
+        ],
+      },
+      {
+        title: "Reports",
+        href: "/docs/reports",
+        children: [
+          { title: "Spending Reports", href: "/docs/reports#spending" },
+          { title: "Portfolio View", href: "/docs/reports#portfolio" },
+          { title: "MCP Tools", href: "/docs/reports#mcp-tools" },
+        ],
+      },
     ],
   },
   {
@@ -70,12 +98,12 @@ export default function DocsLayout({
           <div className="flex items-center gap-4">
             <Search />
             <a
-              href="https://www.npmjs.com/package/@moonpay/owl"
+              href="https://www.npmjs.com/package/moonpay-owl"
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-mono px-3 py-1.5 rounded-full border border-border-dim text-text-secondary hover:border-neon-cyan hover:text-neon-cyan transition-all"
             >
-              @moonpay/owl
+              moonpay-owl
             </a>
           </div>
         </div>

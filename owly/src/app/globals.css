@@ -144,10 +144,13 @@ code {
 
 .code-block code {
   color: var(--text-primary);
+  white-space: pre;
+  display: block;
+  font-family: var(--font-mono), monospace;
 }
 
 .code-block .comment { color: var(--text-muted); }
-.code-block .keyword { color: var(--neon-magenta); }
-.code-block .string  { color: var(--neon-green); }
-.code-block .flag    { color: var(--neon-cyan); }
-.code-block .cmd     { color: var(--neon-yellow); }
+.code-block .keyword { color: var(--text-primary); }
+.code-block .string  { color: var(--text-primary); }
+.code-block .flag    { color: var(--text-muted); }
+.code-block .cmd     { color: var(--text-primary); }

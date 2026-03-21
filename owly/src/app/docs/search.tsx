@@ -8,7 +8,10 @@ const pages = [
   { title: "Terminal", path: "/docs/terminal", keywords: "tui dashboard portfolio agent wizard" },
   { title: "Tunnel", path: "/docs/tunnel", keywords: "wallet sharing policy auth peer host" },
   { title: "Alerts", path: "/docs/alerts", keywords: "price monitor telegram webhook daemon" },
-  { title: "MCP Tools", path: "/docs/mcp", keywords: "tools server proxy owl_tunnel owl_alert" },
+  { title: "Activity Ledger", path: "/docs/activity-ledger", keywords: "ledger audit log history export csv json stats" },
+  { title: "Dry Run", path: "/docs/dryrun", keywords: "simulate simulation dryrun swap transfer bridge quote fees" },
+  { title: "Reports", path: "/docs/reports", keywords: "report spending portfolio daily weekly monthly summary" },
+  { title: "MCP Tools", path: "/docs/mcp", keywords: "tools server proxy owl_tunnel owl_alert owl_ledger owl_dryrun owl_report owl_portfolio" },
   { title: "MoonPay Integration", path: "/docs/integration", keywords: "moonpay mp cli ows skills" },
 ];
 

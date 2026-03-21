@@ -11,8 +11,8 @@ export default function TerminalPage() {
           </h1>
         </div>
         <p className="text-text-secondary leading-relaxed">
-          A persistent TUI dashboard that wraps MoonPay CLI. View your
-          portfolio, monitor activity, and interact with AI agents in a single
+          A persistent TUI dashboard that wraps MoonPay CLI. Chat with an AI
+          agent, manage your portfolio, and monitor activity in a single
           interface.
         </p>
       </header>
@@ -22,10 +22,7 @@ export default function TerminalPage() {
           Usage
         </h2>
         <div className="code-block">
-          <code>
-            <span className="cmd">owl</span> terminal{" "}
-            <span className="flag">--wallet</span> main
-          </code>
+          <code>owl terminal --wallet main</code>
         </div>
         <table className="param-table">
           <thead>
@@ -39,9 +36,7 @@ export default function TerminalPage() {
             <tr>
               <td>-w, --wallet</td>
               <td>Wallet name to use</td>
-              <td>
-                <code className="text-text-muted">main</code>
-              </td>
+              <td>main</td>
             </tr>
           </tbody>
         </table>
@@ -52,55 +47,21 @@ export default function TerminalPage() {
           Interface
         </h2>
         <div className="code-block text-xs">
-          <code>
-            {
-              "+------------------------------------------------------------------+\n"
-            }
-            {
-              "|  OWL Terminal  |  wallet: main  |  agent: claude  |  $5,248      |\n"
-            }
-            {
-              "+------------------------------------------------------------------+\n"
-            }
-            {
-              "|  Portfolio                                                        |\n"
-            }
-            {
-              "|    SOL         12.4                                    $2,108     |\n"
-            }
-            {
-              "|    ETH          0.8                                    $2,640     |\n"
-            }
-            {
-              "|    USDC       500.0                                      $500     |\n"
-            }
-            {
-              "+------------------------------------------------------------------+\n"
-            }
-            {
-              "|  Activity                                                         |\n"
-            }
-            {"|  "}
-            <span className="string">14:32:01</span>
-            {" ["}
-            <span className="keyword">ALERT</span>
-            {"]  BONK +18.2% in 47min                       |\n"}
-            {"|  "}
-            <span className="string">14:31:45</span>
-            {" ["}
-            <span className="flag">TUNNEL</span>
-            {"] Agent-B proposed: swap 50 USDC              |\n"}
-            {"|  "}
-            <span className="string">14:30:12</span>
-            {" ["}
-            <span className="cmd">AGENT</span>
-            {"]  Connected: claude-sonnet-4                  |\n"}
-            {
-              "+------------------------------------------------------------------+\n"
-            }
-            {"|  > _                                                              |\n"}
-            {"+------------------------------------------------------------------+"}
-          </code>
+          <code>{`+------------------------------------------------------------------+
+|  OWL Terminal  |  wallet: main  |  agent: nemotron  |  $5,248    |
++------------------------------------------------------------------+
+|  Portfolio                                                        |
+|    SOL         12.4                                    $2,108     |
+|    ETH          0.8                                    $2,640     |
+|    USDC       500.0                                      $500     |
++------------------------------------------------------------------+
+|  Activity                                                         |
+|  14:32:01 [ALERT]  BONK +18.2% in 47min                         |
+|  14:31:45 [TUNNEL] Agent-B proposed: swap 50 USDC                |
+|  14:30:12 [AGENT]  Connected: openrouter/nemotron                |
++------------------------------------------------------------------+
+|  > _                                                              |
++------------------------------------------------------------------+`}</code>
         </div>
       </section>
 
@@ -111,7 +72,7 @@ export default function TerminalPage() {
         <p className="text-sm text-text-secondary">
           On first launch, an interactive wizard prompts for AI agent
           configuration. Config persists to{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             ~/.config/owl/agent.json
           </code>
         </p>
@@ -125,12 +86,12 @@ export default function TerminalPage() {
           <tbody>
             <tr>
               <td>Provider</td>
-              <td>openrouter, anthropic, openai, ollama</td>
+              <td>openrouter, openai, ollama, custom</td>
             </tr>
             <tr>
               <td>Model</td>
               <td>
-                Any model the provider supports (e.g. claude-sonnet-4)
+                Any model the provider supports (e.g. nvidia/nemotron-3-super-120b-a12b:free)
               </td>
             </tr>
             <tr>
@@ -141,7 +102,7 @@ export default function TerminalPage() {
         </table>
         <p className="text-sm text-text-muted">
           Reconfigure anytime by typing{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             agent setup
           </code>{" "}
           inside the terminal.
@@ -155,20 +116,20 @@ export default function TerminalPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             {
-              title: "Portfolio View",
-              desc: "Live token balances with USD values from your MoonPay wallet",
+              title: "AI Chat",
+              desc: "Talk to your agent in natural language. It calls wallet tools on your behalf.",
             },
             {
               title: "Activity Feed",
-              desc: "Real-time stream of alerts, tunnel proposals, and agent actions",
+              desc: "Real-time stream of tool calls, alerts, and tunnel proposals.",
             },
             {
-              title: "Command Input",
-              desc: "Type commands directly to interact with the terminal",
+              title: "Portfolio View",
+              desc: "Live token balances with USD values from your MoonPay wallet.",
             },
             {
               title: "Agent Integration",
-              desc: "Connect any AI provider and chat with your agent inline",
+              desc: "Connect any OpenAI-compatible provider and chat inline.",
             },
           ].map((f) => (
             <div
@@ -182,6 +143,39 @@ export default function TerminalPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-xl font-semibold text-neon-cyan glow-cyan">
+          Agent Tools
+        </h2>
+        <p className="text-sm text-text-secondary">
+          The terminal agent has access to all 22 OWL tools plus 13 MoonPay tools.
+          Every tool call is logged to the Activity Ledger automatically.
+        </p>
+        <table className="param-table">
+          <thead>
+            <tr>
+              <th>MoonPay Tool</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>mp_token_balance</td><td>Check token balances</td></tr>
+            <tr><td>mp_token_swap</td><td>Swap tokens</td></tr>
+            <tr><td>mp_token_transfer</td><td>Transfer tokens</td></tr>
+            <tr><td>mp_token_search</td><td>Search for tokens</td></tr>
+            <tr><td>mp_token_trending</td><td>Get trending tokens</td></tr>
+            <tr><td>mp_token_bridge</td><td>Bridge tokens cross-chain</td></tr>
+            <tr><td>mp_token_retrieve</td><td>Get token price and details</td></tr>
+            <tr><td>mp_transaction_list</td><td>List transactions</td></tr>
+            <tr><td>mp_wallet_list</td><td>List wallets</td></tr>
+            <tr><td>mp_wallet_create</td><td>Create a new wallet</td></tr>
+            <tr><td>mp_message_sign</td><td>Sign a message</td></tr>
+            <tr><td>mp_buy</td><td>Buy crypto with fiat</td></tr>
+            <tr><td>mp_deposit_create</td><td>Create a deposit address</td></tr>
+          </tbody>
+        </table>
       </section>
 
       <section className="flex flex-col gap-4">

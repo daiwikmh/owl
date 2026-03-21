@@ -6,13 +6,15 @@ export default function McpPage() {
           MCP Tools Reference
         </h1>
         <p className="text-text-secondary leading-relaxed">
-          OWL exposes 15 tools via the Model Context Protocol. All tools are
+          OWL exposes 22 tools via the Model Context Protocol. All tools are
           prefixed{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             owl_
           </code>{" "}
           to avoid conflicts with MoonPay&apos;s tools. Additionally, all
           MoonPay tools are proxied transparently through the same server.
+          The terminal agent also wires 13 MoonPay tools
+          for wallet, token, and transaction operations.
         </p>
       </header>
 
@@ -21,17 +23,15 @@ export default function McpPage() {
           Starting the Server
         </h2>
         <div className="code-block">
-          <code>
-            <span className="cmd">owl</span> mcp
-          </code>
+          <code>owl mcp</code>
         </div>
         <p className="text-sm text-text-secondary">
           Communicates over stdio. Point your AI agent&apos;s MCP config to this
           command. It spawns{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             mp mcp
           </code>{" "}
-          as a child process and proxies all its tools, then registers the 15 OWL
+          as a child process and proxies all its tools, then registers the 22 OWL
           tools on top.
         </p>
       </section>
@@ -187,13 +187,96 @@ export default function McpPage() {
         />
       </section>
 
+      <section className="flex flex-col gap-6">
+        <h2 className="text-xl font-semibold text-neon-yellow glow-yellow">
+          Ledger Tools
+        </h2>
+
+        <ToolCard
+          name="owl_ledger_query"
+          description="Query the activity ledger for past agent actions"
+          params={[
+            { name: "limit", type: "number", required: false, desc: "Max entries (default: 20)" },
+            { name: "tool", type: "string", required: false, desc: "Filter by tool name" },
+            { name: "wallet", type: "string", required: false, desc: "Filter by wallet" },
+            { name: "chain", type: "string", required: false, desc: "Filter by chain" },
+            { name: "since", type: "string", required: false, desc: "ISO date to start from" },
+            { name: "status", type: "enum", required: false, desc: "ok | error" },
+          ]}
+        />
+
+        <ToolCard
+          name="owl_ledger_stats"
+          description="Get summary statistics from the activity ledger"
+          params={[
+            { name: "since", type: "string", required: false, desc: "ISO date to start from" },
+          ]}
+        />
+
+        <ToolCard
+          name="owl_ledger_export"
+          description="Export the activity ledger as JSON or CSV"
+          params={[
+            { name: "format", type: "enum", required: true, desc: "json | csv" },
+            { name: "limit", type: "number", required: false, desc: "Max entries" },
+            { name: "since", type: "string", required: false, desc: "ISO date to start from" },
+          ]}
+        />
+
+        <ToolCard
+          name="owl_ledger_clear"
+          description="Clear ledger entries"
+          params={[
+            { name: "before", type: "string", required: false, desc: "Clear entries before this ISO date (all if omitted)" },
+          ]}
+        />
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <h2 className="text-xl font-semibold text-neon-cyan glow-cyan">
+          Report Tools
+        </h2>
+
+        <ToolCard
+          name="owl_report_generate"
+          description="Generate a spending report from the activity ledger with operation breakdown"
+          params={[
+            { name: "period", type: "enum", required: true, desc: "daily | weekly | monthly" },
+            { name: "wallet", type: "string", required: false, desc: "Filter by wallet name" },
+          ]}
+        />
+
+        <ToolCard
+          name="owl_portfolio_all"
+          description="Get a unified portfolio view across all wallets and all chains in one call"
+          params={[]}
+        />
+      </section>
+
+      <section className="flex flex-col gap-6">
+        <h2 className="text-xl font-semibold text-neon-green glow-green">
+          Dry Run Tools
+        </h2>
+
+        <ToolCard
+          name="owl_dryrun"
+          description="Simulate a transaction (swap, transfer, bridge) without broadcasting. Uses MoonPay CLI simulation mode."
+          params={[
+            { name: "operation", type: "enum", required: true, desc: "swap | transfer | bridge" },
+            { name: "wallet", type: "string", required: true, desc: "Wallet name" },
+            { name: "chain", type: "string", required: true, desc: "Chain name" },
+            { name: "params", type: "Record<string, string>", required: true, desc: "Operation params (from_token, from_amount, to_token, token, amount, to, to_chain)" },
+          ]}
+        />
+      </section>
+
       <section className="flex flex-col gap-4">
         <h2 className="text-xl font-semibold text-neon-cyan glow-cyan">
           Proxied MoonPay Tools
         </h2>
         <p className="text-sm text-text-secondary">
           All tools from{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             mp mcp
           </code>{" "}
           are proxied transparently. This includes wallet management, token
@@ -230,7 +313,7 @@ function ToolCard({
   return (
     <div className="rounded-lg border border-border-dim bg-bg-card overflow-hidden">
       <div className="px-5 py-3 border-b border-border-dim flex items-center gap-3">
-        <code className="text-sm font-mono text-neon-cyan">{name}</code>
+        <code className="text-sm font-mono text-text-primary">{name}</code>
       </div>
       <div className="px-5 py-3">
         <p className="text-sm text-text-secondary mb-3">{description}</p>

@@ -26,12 +26,7 @@ export default function TunnelPage() {
           Create a Tunnel (Host)
         </h3>
         <div className="code-block">
-          <code>
-            <span className="cmd">owl</span> tunnel create{" "}
-            <span className="flag">-w</span> main{" "}
-            <span className="flag">-n</span> my-tunnel{" "}
-            <span className="flag">-p</span> 9800
-          </code>
+          <code>owl tunnel create -w main -n my-tunnel -p 9800</code>
         </div>
         <table className="param-table">
           <thead>
@@ -70,11 +65,7 @@ export default function TunnelPage() {
           Connect to a Tunnel (Peer)
         </h3>
         <div className="code-block">
-          <code>
-            <span className="cmd">owl</span> tunnel connect{" "}
-            <span className="string">ws://host:9800/my-tunnel</span>{" "}
-            <span className="flag">-w</span> my-wallet
-          </code>
+          <code>owl tunnel connect ws://host:9800/my-tunnel -w my-wallet</code>
         </div>
         <table className="param-table">
           <thead>
@@ -106,9 +97,7 @@ export default function TunnelPage() {
           List Tunnels
         </h3>
         <div className="code-block">
-          <code>
-            <span className="cmd">owl</span> tunnel list
-          </code>
+          <code>owl tunnel list</code>
         </div>
       </section>
 
@@ -118,45 +107,25 @@ export default function TunnelPage() {
         </h2>
         <p className="text-sm text-text-secondary">
           Keys never leave the host. Peers prove wallet ownership via{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             mp message sign
           </code>{" "}
           challenge-response using the wallet&apos;s own keypair.
         </p>
         <div className="code-block text-xs">
-          <code>
-            {"  Peer                              Host\n"}
-            {"    |                                 |\n"}
-            {"    |  "}
-            <span className="flag">-------- connect ----------&gt;</span>
-            {"   |\n"}
-            {"    |                                 |\n"}
-            {"    |  "}
-            <span className="keyword">
-              &lt;-- auth.challenge (nonce) --
-            </span>
-            {"  |\n"}
-            {"    |                                 |\n"}
-            {"    |  "}
-            <span className="string">mp message sign --message nonce</span>
-            {"\n"}
-            {"    |                                 |\n"}
-            {"    |  "}
-            <span className="flag">
-              -- auth.verify (sig, addr) --&gt;
-            </span>
-            {"  |\n"}
-            {"    |                                 |\n"}
-            {"    |  "}
-            <span className="string">verify signature on-chain</span>
-            {"      |\n"}
-            {"    |                                 |\n"}
-            {"    |  "}
-            <span className="keyword">
-              &lt;---- auth.success ----------
-            </span>
-            {"  |"}
-          </code>
+          <code>{`  Peer                              Host
+    |                                 |
+    |  -------- connect ---------->   |
+    |                                 |
+    |  <-- auth.challenge (nonce) --  |
+    |                                 |
+    |  mp message sign --message nonce|
+    |                                 |
+    |  -- auth.verify (sig, addr) ->  |
+    |                                 |
+    |  verify signature on-chain      |
+    |                                 |
+    |  <---- auth.success ----------  |`}</code>
         </div>
       </section>
 
@@ -170,30 +139,15 @@ export default function TunnelPage() {
           need manual approval.
         </p>
         <div className="code-block text-xs">
-          <code>
-            {"  Incoming Proposal\n"}
-            {"        |\n"}
-            {"  "}
-            <span className="keyword">Has policy?</span>
-            {" --No--> "}
-            <span className="keyword">REJECT</span>
-            {"\n"}
-            {"        | Yes\n"}
-            {"  "}
-            <span className="flag">Daily limit OK?</span>
-            {" --No--> "}
-            <span className="keyword">REJECT</span>
-            {"\n"}
-            {"        | Yes\n"}
-            {"  "}
-            <span className="string">Auto-approve match?</span>
-            {" --Yes--> "}
-            <span className="string">EXECUTE</span>
-            {"\n"}
-            {"        | No\n"}
-            {"  "}
-            <span className="cmd">Queue for manual approval</span>
-          </code>
+          <code>{`  Incoming Proposal
+        |
+  Has policy? --No--> REJECT
+        | Yes
+  Daily limit OK? --No--> REJECT
+        | Yes
+  Auto-approve match? --Yes--> EXECUTE
+        | No
+  Queue for manual approval`}</code>
         </div>
 
         <h3 className="text-sm font-semibold text-text-primary mt-2">
@@ -221,12 +175,7 @@ export default function TunnelPage() {
             <tr>
               <td>allowed_operations</td>
               <td>string[]</td>
-              <td>
-                Allowed ops:{" "}
-                <code className="text-neon-green text-xs">swap</code>,{" "}
-                <code className="text-neon-green text-xs">transfer</code>,{" "}
-                <code className="text-neon-green text-xs">bridge</code>
-              </td>
+              <td>Allowed ops: swap, transfer, bridge</td>
             </tr>
             <tr>
               <td>auto_approve_max_usd</td>

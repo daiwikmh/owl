@@ -18,33 +18,23 @@ export default function IntegrationPage() {
         </h2>
         <p className="text-sm text-text-secondary leading-relaxed">
           OWL wraps the MoonPay CLI (
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             @moonpay/cli
           </code>
           ) and extends it. When you run{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             owl mcp
           </code>
           , it spawns{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             mp mcp
           </code>{" "}
           as a child process and acts as a single gateway for AI agents.
         </p>
         <div className="code-block text-xs">
-          <code>
-            <span className="keyword">Agent</span>
-            {" --MCP--> "}
-            <span className="string">owl mcp</span>
-            {" --MCP--> "}
-            <span className="flag">mp mcp</span>
-            {" --> "}
-            <span className="cmd">Blockchains</span>
-            {"\n\n"}
-            <span className="comment">
-              {"# owl mcp = all MoonPay tools + 15 owl_* tools"}
-            </span>
-          </code>
+          <code>{`Agent --MCP--> owl mcp --MCP--> mp mcp --> Blockchains
+
+# owl mcp = all MoonPay tools + 22 owl_* tools`}</code>
         </div>
       </section>
 
@@ -54,40 +44,21 @@ export default function IntegrationPage() {
         </h2>
         <p className="text-sm text-text-secondary">
           Add OWL to your AI agent&apos;s MCP config. This replaces{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             mp mcp
           </code>{" "}
           since OWL proxies all MoonPay tools.
         </p>
         <div className="code-block">
-          <code>
-            <span className="comment">
-              {"// claude_desktop_config.json or similar"}
-            </span>
-            {"\n"}
-            {"{\n"}
-            {'  '}
-            <span className="string">&quot;mcpServers&quot;</span>
-            {": {\n"}
-            {'    '}
-            <span className="string">&quot;owl&quot;</span>
-            {": {\n"}
-            {'      '}
-            <span className="string">&quot;command&quot;</span>
-            {": "}
-            <span className="string">&quot;npx&quot;</span>
-            {",\n"}
-            {'      '}
-            <span className="string">&quot;args&quot;</span>
-            {": ["}
-            <span className="string">&quot;@moonpay/owl&quot;</span>
-            {", "}
-            <span className="string">&quot;mcp&quot;</span>
-            {"]\n"}
-            {"    }\n"}
-            {"  }\n"}
-            {"}"}
-          </code>
+          <code>{`// mcp config (claude_desktop_config.json or similar)
+{
+  "mcpServers": {
+    "owl": {
+      "command": "npx",
+      "args": ["moonpay-owl", "mcp"]
+    }
+  }
+}`}</code>
         </div>
       </section>
 
@@ -99,29 +70,18 @@ export default function IntegrationPage() {
           Before using OWL, you need a MoonPay account and wallet.
         </p>
         <div className="code-block">
-          <code>
-            <span className="comment"># install MoonPay CLI</span>
-            {"\n"}
-            <span className="cmd">npm</span> install{" "}
-            <span className="flag">-g</span>{" "}
-            <span className="string">@moonpay/cli</span>
-            {"\n\n"}
-            <span className="comment"># authenticate</span>
-            {"\n"}
-            <span className="cmd">mp</span> login{" "}
-            <span className="flag">--email</span> you@example.com{"\n"}
-            <span className="cmd">mp</span> verify{" "}
-            <span className="flag">--email</span> you@example.com{" "}
-            <span className="flag">--code</span> 123456{"\n\n"}
-            <span className="comment"># create a wallet</span>
-            {"\n"}
-            <span className="cmd">mp</span> wallet create{" "}
-            <span className="flag">--name</span> main{"\n\n"}
-            <span className="comment"># verify everything works</span>
-            {"\n"}
-            <span className="cmd">mp</span> wallet balance{" "}
-            <span className="flag">--wallet</span> main
-          </code>
+          <code>{`# install MoonPay CLI
+npm install -g @moonpay/cli
+
+# authenticate
+mp login --email you@example.com
+mp verify --email you@example.com --code 123456
+
+# create a wallet
+mp wallet create --name main
+
+# verify everything works
+mp wallet balance --wallet main`}</code>
         </div>
       </section>
 
@@ -130,7 +90,7 @@ export default function IntegrationPage() {
           Skills Format
         </h2>
         <p className="text-sm text-text-secondary leading-relaxed">
-          OWL publishes three skills to the{" "}
+          OWL publishes six skills to the{" "}
           <a
             href="https://github.com/moonpay/skills"
             target="_blank"
@@ -140,7 +100,7 @@ export default function IntegrationPage() {
             MoonPay Skills repo
           </a>{" "}
           following the{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             SKILL.md
           </code>{" "}
           format.
@@ -172,6 +132,24 @@ export default function IntegrationPage() {
                 Cross-device price monitoring with Telegram and webhook support
               </td>
             </tr>
+            <tr>
+              <td>owl-ledger</td>
+              <td>
+                SQLite audit trail of every agent tool call with query, stats, and export
+              </td>
+            </tr>
+            <tr>
+              <td>owl-reports</td>
+              <td>
+                Spending reports, portfolio snapshots, and multi-wallet aggregation
+              </td>
+            </tr>
+            <tr>
+              <td>owl-dryrun</td>
+              <td>
+                Transaction simulation (swap, transfer, bridge) without broadcasting
+              </td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -181,52 +159,20 @@ export default function IntegrationPage() {
           Ecosystem
         </h2>
         <div className="code-block text-xs">
-          <code>
-            <span className="comment">{"  MoonPay Skills Repo"}</span>
-            {"\n"}
-            {"  "}
-            <span className="flag">moonpay-auth</span>
-            {"       "}
-            <span className="flag">moonpay-swap-tokens</span>
-            {"\n"}
-            {"  "}
-            <span className="flag">moonpay-deposit</span>
-            {"    "}
-            <span className="flag">moonpay-trading-auto</span>
-            {"\n"}
-            {"  "}
-            <span className="flag">messari-x402</span>
-            {"       "}
-            <span className="flag">myriad-prediction</span>
-            {"\n"}
-            {"  "}
-            <span className="string">owl-terminal</span>
-            {"       "}
-            <span className="string">owl-tunnel</span>
-            {"\n"}
-            {"  "}
-            <span className="string">owl-alerts</span>
-            {"\n\n"}
-            <span className="comment">{"  CLIs"}</span>
-            {"\n"}
-            {"  "}
-            <span className="flag">mp</span>
-            {" (MoonPay)          "}
-            <span className="string">owl</span>
-            {" (this project)\n"}
-            {"  "}
-            <span className="flag">pc</span>
-            {" (Polymarket)       "}
-            <span className="flag">messari-cli</span>
-            {"\n\n"}
-            <span className="comment">{"  MCP Servers"}</span>
-            {"\n"}
-            {"  "}
-            <span className="flag">mp mcp</span>
-            {"  -->  "}
-            <span className="string">owl mcp</span>
-            {" (wraps mp mcp)"}
-          </code>
+          <code>{`  MoonPay Skills Repo
+  moonpay-auth       moonpay-swap-tokens
+  moonpay-deposit    moonpay-trading-auto
+  messari-x402       myriad-prediction
+  owl-terminal       owl-tunnel
+  owl-alerts         owl-ledger
+  owl-reports        owl-dryrun
+
+  CLIs
+  mp (MoonPay)          owl (this project)
+  pc (Polymarket)       messari-cli
+
+  MCP Servers
+  mp mcp  -->  owl mcp (wraps mp mcp)`}</code>
         </div>
       </section>
 

@@ -22,18 +22,11 @@ export default function AlertsPage() {
           Add an Alert
         </h2>
         <div className="code-block">
-          <code>
-            <span className="cmd">owl</span> alert add \{"\n"}
-            {"  "}
-            <span className="flag">-t</span> So11111111111111111111111111111111{" "}
-            \{"\n"}
-            {"  "}
-            <span className="flag">-c</span> solana \{"\n"}
-            {"  "}
-            <span className="flag">--condition</span> price_above:200 \{"\n"}
-            {"  "}
-            <span className="flag">--channel</span> telegram
-          </code>
+          <code>{`owl alert add \\
+  -t So11111111111111111111111111111111 \\
+  -c solana \\
+  --condition price_above:200 \\
+  --channel telegram`}</code>
         </div>
         <table className="param-table">
           <thead>
@@ -60,11 +53,7 @@ export default function AlertsPage() {
             </tr>
             <tr>
               <td>--condition</td>
-              <td>
-                Condition in{" "}
-                <code className="text-neon-green text-xs">type:value</code>{" "}
-                format
-              </td>
+              <td>Condition in type:value format</td>
               <td>
                 <span className="tag tag-required">required</span>
               </td>
@@ -103,38 +92,22 @@ export default function AlertsPage() {
             <tr>
               <td>price_above</td>
               <td>Price &gt;= threshold</td>
-              <td>
-                <code className="text-text-secondary text-xs">
-                  price_above:200
-                </code>
-              </td>
+              <td>price_above:200</td>
             </tr>
             <tr>
               <td>price_below</td>
               <td>Price &lt;= threshold</td>
-              <td>
-                <code className="text-text-secondary text-xs">
-                  price_below:100
-                </code>
-              </td>
+              <td>price_below:100</td>
             </tr>
             <tr>
               <td>percent_change</td>
               <td>% move in time window</td>
-              <td>
-                <code className="text-text-secondary text-xs">
-                  percent_change:15
-                </code>
-              </td>
+              <td>percent_change:15</td>
             </tr>
             <tr>
               <td>balance_below</td>
               <td>Wallet balance drops below threshold</td>
-              <td>
-                <code className="text-text-secondary text-xs">
-                  balance_below:50
-                </code>
-              </td>
+              <td>balance_below:50</td>
             </tr>
           </tbody>
         </table>
@@ -145,23 +118,18 @@ export default function AlertsPage() {
           Manage Alerts
         </h2>
         <div className="code-block">
-          <code>
-            <span className="comment"># list all alerts</span>
-            {"\n"}
-            <span className="cmd">owl</span> alert list{"\n\n"}
-            <span className="comment"># remove by ID</span>
-            {"\n"}
-            <span className="cmd">owl</span> alert remove{" "}
-            <span className="string">abc123</span>
-            {"\n\n"}
-            <span className="comment"># start the monitoring daemon</span>
-            {"\n"}
-            <span className="cmd">owl</span> alert daemon
-          </code>
+          <code>{`# list all alerts
+owl alert list
+
+# remove by ID
+owl alert remove abc123
+
+# start the monitoring daemon
+owl alert daemon`}</code>
         </div>
         <p className="text-sm text-text-muted">
           The daemon polls{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             mp token retrieve
           </code>{" "}
           every 10 seconds. Alerts fire once and are marked as triggered.
@@ -181,14 +149,9 @@ export default function AlertsPage() {
               Send alerts to a Telegram chat via the Bot API.
             </p>
             <div className="code-block text-xs">
-              <code>
-                <span className="cmd">owl</span> alert channels \{"\n"}
-                {"  "}
-                <span className="flag">--telegram-token</span> BOT_TOKEN \
-                {"\n"}
-                {"  "}
-                <span className="flag">--telegram-chat</span> CHAT_ID
-              </code>
+              <code>{`owl alert channels \\
+  --telegram-token BOT_TOKEN \\
+  --telegram-chat CHAT_ID`}</code>
             </div>
           </div>
           <div className="p-4 rounded-lg bg-bg-card border border-border-dim">
@@ -200,18 +163,14 @@ export default function AlertsPage() {
               servers.
             </p>
             <div className="code-block text-xs">
-              <code>
-                <span className="cmd">owl</span> alert channels \{"\n"}
-                {"  "}
-                <span className="flag">--webhook-url</span>{" "}
-                <span className="string">https://hooks.slack.com/...</span>
-              </code>
+              <code>{`owl alert channels \\
+  --webhook-url https://hooks.slack.com/...`}</code>
             </div>
           </div>
         </div>
         <p className="text-sm text-text-muted">
           Channel config is stored at{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             ~/.config/owl/channels.json
           </code>
         </p>

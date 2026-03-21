@@ -7,7 +7,7 @@ export default function DocsPage() {
         </h1>
         <p className="text-text-secondary leading-relaxed">
           OWL is a partner extension for MoonPay&apos;s Open Wallet Standard. It
-          adds three infrastructure primitives on top of the MoonPay CLI that
+          adds six infrastructure primitives on top of the MoonPay CLI that
           turn wallet operations into a multi-agent coordination platform.
         </p>
       </header>
@@ -20,25 +20,15 @@ export default function DocsPage() {
           You need the MoonPay CLI installed and authenticated.
         </p>
         <div className="code-block">
-          <code>
-            <span className="comment"># install MoonPay CLI</span>
-            {"\n"}
-            <span className="cmd">npm</span> install{" "}
-            <span className="flag">-g</span>{" "}
-            <span className="string">@moonpay/cli</span>
-            {"\n\n"}
-            <span className="comment"># authenticate</span>
-            {"\n"}
-            <span className="cmd">mp</span> login{" "}
-            <span className="flag">--email</span> you@example.com{"\n"}
-            <span className="cmd">mp</span> verify{" "}
-            <span className="flag">--email</span> you@example.com{" "}
-            <span className="flag">--code</span> 123456{"\n\n"}
-            <span className="comment"># create a wallet</span>
-            {"\n"}
-            <span className="cmd">mp</span> wallet create{" "}
-            <span className="flag">--name</span> main
-          </code>
+          <code>{`# install MoonPay CLI
+npm install -g @moonpay/cli
+
+# authenticate
+mp login --email you@example.com
+mp verify --email you@example.com --code 123456
+
+# create a wallet
+mp wallet create --name main`}</code>
         </div>
       </section>
 
@@ -47,18 +37,11 @@ export default function DocsPage() {
           Installation
         </h2>
         <div className="code-block">
-          <code>
-            <span className="comment"># run directly with npx</span>
-            {"\n"}
-            <span className="cmd">npx</span>{" "}
-            <span className="string">@moonpay/owl</span>
-            {"\n\n"}
-            <span className="comment"># or install globally</span>
-            {"\n"}
-            <span className="cmd">npm</span> install{" "}
-            <span className="flag">-g</span>{" "}
-            <span className="string">@moonpay/owl</span>
-          </code>
+          <code>{`# run directly with npx
+npx moonpay-owl
+
+# or install globally
+npm install -g moonpay-owl`}</code>
         </div>
       </section>
 
@@ -67,27 +50,17 @@ export default function DocsPage() {
           Quick Start
         </h2>
         <div className="code-block">
-          <code>
-            <span className="comment"># launch the terminal dashboard</span>
-            {"\n"}
-            <span className="cmd">owl</span> terminal{" "}
-            <span className="flag">--wallet</span> main{"\n\n"}
-            <span className="comment"># start MCP server for AI agents</span>
-            {"\n"}
-            <span className="cmd">owl</span> mcp{"\n\n"}
-            <span className="comment"># add a price alert</span>
-            {"\n"}
-            <span className="cmd">owl</span> alert add{" "}
-            <span className="flag">-t</span> So11...{" "}
-            <span className="flag">-c</span> solana{" "}
-            <span className="flag">--condition</span> price_above:200{" "}
-            <span className="flag">--channel</span> telegram{"\n\n"}
-            <span className="comment"># create a sharing tunnel</span>
-            {"\n"}
-            <span className="cmd">owl</span> tunnel create{" "}
-            <span className="flag">-w</span> main{" "}
-            <span className="flag">-n</span> my-tunnel
-          </code>
+          <code>{`# launch the terminal dashboard
+owl terminal --wallet main
+
+# start MCP server for AI agents
+owl mcp
+
+# add a price alert
+owl alert add -t So11... -c solana --condition price_above:200 --channel telegram
+
+# create a sharing tunnel
+owl tunnel create -w main -n my-tunnel`}</code>
         </div>
       </section>
 
@@ -143,6 +116,46 @@ export default function DocsPage() {
               <td>owl alert channels</td>
               <td>Configure Telegram / webhook</td>
             </tr>
+            <tr>
+              <td>owl ledger list</td>
+              <td>Show recent ledger entries</td>
+            </tr>
+            <tr>
+              <td>owl ledger stats</td>
+              <td>Show ledger statistics</td>
+            </tr>
+            <tr>
+              <td>owl ledger export</td>
+              <td>Export ledger (JSON/CSV)</td>
+            </tr>
+            <tr>
+              <td>owl ledger clear</td>
+              <td>Clear ledger entries</td>
+            </tr>
+            <tr>
+              <td>owl report daily</td>
+              <td>Today's spending report</td>
+            </tr>
+            <tr>
+              <td>owl report weekly</td>
+              <td>Last 7 days report</td>
+            </tr>
+            <tr>
+              <td>owl report portfolio</td>
+              <td>All wallets, all chains view</td>
+            </tr>
+            <tr>
+              <td>owl dryrun swap</td>
+              <td>Simulate a swap</td>
+            </tr>
+            <tr>
+              <td>owl dryrun transfer</td>
+              <td>Simulate a transfer</td>
+            </tr>
+            <tr>
+              <td>owl dryrun bridge</td>
+              <td>Simulate a bridge</td>
+            </tr>
           </tbody>
         </table>
       </section>
@@ -153,7 +166,7 @@ export default function DocsPage() {
         </h2>
         <p className="text-sm text-text-secondary">
           OWL stores all config at{" "}
-          <code className="text-neon-green text-xs bg-bg-secondary px-1.5 py-0.5 rounded">
+          <code className="text-xs bg-bg-secondary px-1.5 py-0.5 rounded text-text-primary">
             ~/.config/owl/
           </code>
         </p>
@@ -180,6 +193,10 @@ export default function DocsPage() {
             <tr>
               <td>alerts.db</td>
               <td>SQLite database for alert rules and history</td>
+            </tr>
+            <tr>
+              <td>ledger.db</td>
+              <td>SQLite database for activity ledger (audit trail)</td>
             </tr>
           </tbody>
         </table>

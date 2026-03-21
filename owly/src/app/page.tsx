@@ -17,7 +17,7 @@ export default function Home() {
 
         <div className="text-center relative">
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-sentient text-white">
-            OWL
+            OWL on MoonPay
           </h1>
           <p className="font-mono text-sm sm:text-base text-foreground/60 text-balance mt-6 max-w-[520px] mx-auto leading-relaxed">
             Terminal, Tunnel, and Alerts for MoonPay wallets.
