@@ -10,8 +10,8 @@ export async function signChallenge(
   nonce: string,
   chain: string = "solana"
 ): Promise<{ signature: string; walletAddress: string }> {
-  // Use mp message sign to sign the challenge
-  const output = await execMp([
+  // Sign the challenge
+  const signOutput = await execMp([
     "message",
     "sign",
     "--wallet",
@@ -22,11 +22,18 @@ export async function signChallenge(
     nonce,
   ]);
 
-  const data = JSON.parse(output);
-  return {
-    signature: data.signature,
-    walletAddress: data.address ?? data.walletAddress ?? data.publicKey,
-  };
+  // Output is "signature: <value>" plain text
+  const sigMatch = signOutput.match(/^signature:\s*(.+)$/m);
+  if (!sigMatch) throw new Error("Could not parse signature from mp output");
+  const signature = sigMatch[1].trim();
+
+  // Get wallet address from mp wallet list
+  const listOutput = await execMp(["wallet", "list"]);
+  const addrMatch = listOutput.match(new RegExp(`${chain}:\\s*(.+)`, "m"));
+  if (!addrMatch) throw new Error(`Could not find ${chain} address for wallet`);
+  const walletAddress = addrMatch[1].trim();
+
+  return { signature, walletAddress };
 }
 
 // Verify a signature against a wallet address

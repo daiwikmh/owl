@@ -118,8 +118,17 @@ export async function startTerminal(wallet: string) {
   await showPortfolio(wallet);
 
   if (!agentConfig) {
-    ln(`${YE}  No agent configured. Run "agent setup" to connect an AI agent.${R}`);
+    ln(`${YE}  No agent configured. Starting setup...${R}`);
     ln();
+    const config = await agentSetup(rl);
+    if (config) {
+      agentConfig = config;
+      ln(`${GR}  Agent configured: ${config.provider}/${config.model}${R}`);
+      ln();
+    } else {
+      ln(`${YE}  Skipped. You can run "agent setup" later.${R}`);
+      ln();
+    }
   }
 
   const history: ChatMessage[] = [];

@@ -304,6 +304,41 @@ function printDryRun(r: any) {
 }
 
 program
+  .command("reset")
+  .description("Delete owl agent credentials and channel config")
+  .option("--yes", "Skip confirmation prompt")
+  .option("--all", "Delete everything including alerts, ledger, tunnels, and state")
+  .action(async (opts) => {
+    const { join } = await import("node:path");
+    const { homedir } = await import("node:os");
+    const { rmSync, existsSync } = await import("node:fs");
+    const configDir = join(homedir(), ".config", "owl");
+    if (!existsSync(configDir)) {
+      console.log("Nothing to reset (no owl config found)");
+      return;
+    }
+    if (!opts.yes) {
+      const label = opts.all ? "all owl data" : "agent credentials and channel config";
+      const readline = await import("node:readline");
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const answer = await new Promise<string>((resolve) => rl.question(`This will delete ${label}. Continue? [y/N] `, resolve));
+      rl.close();
+      if (answer.toLowerCase() !== "y") { console.log("Aborted"); return; }
+    }
+    if (opts.all) {
+      rmSync(configDir, { recursive: true, force: true });
+      console.log("Reset complete. All owl data removed.");
+    } else {
+      const creds = ["agent.json", "channels.json"];
+      for (const f of creds) {
+        const p = join(configDir, f);
+        if (existsSync(p)) rmSync(p);
+      }
+      console.log("Reset complete. Agent credentials and channel config removed.");
+    }
+  });
+
+program
   .command("web")
   .description("Start local read-only dashboard")
   .option("-p, --port <port>", "Port", "3131")

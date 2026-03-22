@@ -17,7 +17,16 @@ STRICT OUTPUT RULES - these are non-negotiable:
 - Never use bullet points or numbered lists. Write in plain sentences only.
 - Keep responses short and direct. One to three sentences max unless the user explicitly asks for more detail.
 - When you need to list things, use commas or line breaks with plain labels like "Token: SOL  Chain: solana".
-- If a user greets you, respond in one short sentence and ask what they need.`;
+- If a user greets you, respond in one short sentence and ask what they need.
+
+TOOL ERROR RECOVERY - when a tool call fails or returns an error, do NOT just tell the user to fix it themselves. Instead:
+- If a channel (telegram, webhook) is not configured: ask the user for the credentials, then call owl_alert_channels_set to save them, then retry the alert.
+- If a wallet is missing or not found: ask the user for the wallet name or offer to create one with mp_wallet_create, then retry.
+- If a required parameter was missing or wrong: ask the user for the correct value and retry the tool call.
+- If a tunnel connection or auth fails: check if the tunnel exists with owl_tunnel_list, help the user create one if needed.
+- If a token search or retrieve fails: ask the user to clarify the token name or chain, try alternative search terms.
+- For any other error: read the error message, figure out what is needed, ask the user only for what you cannot resolve yourself, then retry.
+Never respond with raw CLI instructions. You have tools, use them.`;
 
 const OWL_TOOLS = [
   {
@@ -109,6 +118,7 @@ const OWL_TOOLS = [
         properties: {
           chain: { type: "string" },
           limit: { type: "number" },
+          page: { type: "number" },
         },
         required: ["chain"],
       },
@@ -520,7 +530,7 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
         result = await execMp(args.wallet ? ["transaction", "list", "--wallet", String(args.wallet)] : ["transaction", "list"]);
         break;
       case "mp_token_trending":
-        result = await execMp(["token", "trending", "list", "--chain", String(args.chain), "--limit", String(args.limit ?? 10)]);
+        result = await execMp(["token", "trending", "list", "--chain", String(args.chain), "--limit", String(args.limit ?? 10), "--page", String(args.page ?? 1)]);
         break;
       case "mp_token_bridge":
         result = await execMp(["token", "bridge", "--from-wallet", String(args.from_wallet), "--from-chain", String(args.from_chain), "--from-token", String(args.from_token), "--from-amount", String(args.from_amount), "--to-chain", String(args.to_chain), "--to-token", String(args.to_token)]);

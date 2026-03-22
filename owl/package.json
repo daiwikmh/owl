@@ -1,11 +1,12 @@
 {
   "name": "moonpay-owl",
-  "version": "0.1.6",
+  "version": "0.1.9",
   "description": "Infrastructure extensions for MoonPay OWS: terminal, tunnel, and alerts",
   "type": "module",
   "license": "CC0-1.0",
   "files": [
-    "dist"
+    "dist",
+    "docs"
   ],
   "bin": {
     "owl": "./dist/cli.js"

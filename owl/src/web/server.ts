@@ -22,6 +22,23 @@ function html(res: ServerResponse, body: string) {
   res.end(body);
 }
 
+function md(res: ServerResponse, body: string) {
+  res.writeHead(200, { "Content-Type": "text/markdown; charset=utf-8", "Access-Control-Allow-Origin": "*" });
+  res.end(body);
+}
+
+function loadSkillMd(): string {
+  try {
+    // resolve relative to this file's package
+    const skillPath = join(new URL(".", import.meta.url).pathname, "..", "..", "docs", "skill.md");
+    return readFileSync(skillPath, "utf-8");
+  } catch {
+    // fallback: try cwd
+    try { return readFileSync(join(process.cwd(), "docs", "skill.md"), "utf-8"); }
+    catch { return "# skill.md not found"; }
+  }
+}
+
 function loadJsonFile(name: string): unknown {
   try { return JSON.parse(readFileSync(join(CONFIG_DIR, name), "utf-8")); }
   catch { return null; }
@@ -33,6 +50,9 @@ async function handleRequest(req: IncomingMessage, res: ServerResponse) {
   const q = url.searchParams;
 
   try {
+    // skill.md for agent discovery
+    if (path === "/skill.md") return md(res, loadSkillMd());
+
     // dashboard
     if (path === "/") return html(res, getDashboardHtml());
 

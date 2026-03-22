@@ -1,5 +1,5 @@
 import { getStore } from "./store.js";
-import { dispatch } from "./channels/index.js";
+import { dispatch, isChannelConfigured } from "./channels/index.js";
 import { execMp } from "../mp.js";
 import { randomUUID } from "node:crypto";
 
@@ -29,6 +29,14 @@ export async function addAlert(opts: AlertOpts) {
   const [type, value] = opts.condition.split(":");
   if (!type || !value) {
     console.error("Invalid condition format. Use type:value (e.g. price_above:200)");
+    return;
+  }
+
+  if (!isChannelConfigured(opts.channel, opts.url)) {
+    const hint = opts.channel === "telegram"
+      ? "Run: owl alert channels --telegram-token <token> --telegram-chat <chatId>"
+      : "Provide --url or run: owl alert channels --webhook-url <url>";
+    console.error(`Channel "${opts.channel}" is not configured. ${hint}`);
     return;
   }
 
@@ -143,6 +151,13 @@ export async function addAlertFromMcp(args: {
   channels: string[];
   webhook_url?: string;
 }) {
+  const missing = args.channels.filter((ch) => !isChannelConfigured(ch, args.webhook_url));
+  if (missing.length) {
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ error: `Channel(s) not configured: ${missing.join(", ")}` }) }],
+    };
+  }
+
   const store = getStore();
   const rule: AlertRule = {
     id: randomUUID(),

@@ -80,6 +80,18 @@ export async function configureChannels(opts: ChannelOpts) {
   console.log("Channels configured:", JSON.stringify(config, null, 2));
 }
 
+export function isChannelConfigured(channel: string, webhookUrl?: string): boolean {
+  const config = loadConfig();
+  switch (channel) {
+    case "telegram":
+      return !!(config.telegram?.token && config.telegram?.chatId);
+    case "webhook":
+      return !!(webhookUrl || config.webhook?.url);
+    default:
+      return false;
+  }
+}
+
 // MCP handler
 export async function configureChannelsFromMcp(args: {
   telegram_token?: string;
