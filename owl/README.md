@@ -1,409 +1,268 @@
 # OWL
 
-Infrastructure extensions for MoonPay's Open Wallet Standard (OWS).
+Infrastructure extensions that push the Open Wallet Standard (OWS) from a single-agent wallet into a multi-agent coordination layer.
 
-Six primitives that turn MoonPay's wallet layer into a multi-agent coordination platform: **Terminal**, **Tunnel**, **Alerts**, **Activity Ledger**, **Dry Run**, and **Reports**.
+## What OWS Gives You
+
+OWS is MoonPay's CC0-licensed standard for local-first, chain-agnostic wallet management. It handles key generation, signing enclave isolation, and multi-chain HD derivation. One vault, one interface, every chain. Keys never leave the signing enclave.
+
+## What OWL Adds
+
+OWS solves wallet infrastructure for a single agent. OWL solves what happens when multiple agents need to coordinate around those wallets.
+
+```
+  What OWS provides              What OWL extends it with
+  +--------------------------+   +---------------------------------+
+  | Key generation           |   | Delegated access (Tunnels)      |
+  | Signing enclave          |   | Per-peer policy enforcement     |
+  | Multi-chain derivation   |   | Cross-agent audit trail         |
+  | Local-first storage      |   | Pre-execution simulation        |
+  | Policy engine (basic)    |   | Programmable spending policies  |
+  | MCP tool interface       |   | Alert/notification layer        |
+  | CLI + REST + SDK         |   | Agent-native TUI + Dashboard    |
+  +--------------------------+   +---------------------------------+
+```
+
+OWL does not fork or replace OWS. Every operation goes through the MoonPay CLI (`mp`). OWL wraps it, extends it, and adds the coordination primitives that autonomous agents need.
+
+## How OWL Pushes OWS Forward
+
+### 1. Delegated Wallet Access Without Key Exposure
+
+OWS proves that keys can stay in a local signing enclave. OWL proves that this model scales to multiple agents. Tunnels let Agent B propose transactions on Agent A's wallet without Agent A ever sharing keys. The host signs, the peer proposes, and the policy engine decides what gets through.
+
+This is the missing piece for autonomous agent teams: shared wallet access with zero trust assumptions.
+
+```
+  Host (has keys)                    Peer (no keys)
+  +------------------+              +------------------+
+  |  OWS Signing     |              |  Propose TX      |
+  |  Enclave         |  challenge   |  via tunnel      |
+  |  [keys locked]   | <==========> |  [auth only]     |
+  |  Policy Engine   |  response    |  Wait for result |
+  |  Sign + Broadcast|              |                  |
+  +------------------+              +------------------+
+```
+
+The auth flow uses OWS's own `signMessage` to prove wallet ownership. No external auth system, no API keys between agents. Just cryptographic proof using the same primitives OWS already provides.
+
+### 2. Policy Engine Extensions
+
+OWS defines a policy engine with spending limits, allowlists, and simulation gates. OWL extends this with per-peer policies scoped to tunnel connections:
+
+- Daily USD spending limits per peer agent
+- Token whitelists (only USDC and SOL, not memecoins)
+- Operation whitelists (read-only peers vs. full trading peers)
+- Auto-approve thresholds (under $10 goes through, over $10 queues for review)
+
+This demonstrates that OWS's policy model is composable. Third parties can layer domain-specific policies on top of the base standard without modifying OWS itself.
+
+### 3. Audit Trail as Infrastructure
+
+Every tool call through OWL is logged to a local SQLite ledger: tool name, arguments, result, wallet, chain, status, timestamp. This turns OWS from a signing primitive into an auditable signing primitive.
+
+```
+  Agent calls any tool
+        |
+        v
+  +-------------+
+  | OWS signs   |
+  +------+------+
+         |
+  +------v------+
+  | OWL logs    |  tool, args, result, wallet, chain, status, timestamp
+  +------+------+
+         |
+    query / stats / export (JSON, CSV)
+```
+
+Agents can review their own history, generate compliance reports, and detect anomalies. This is foundational for any production deployment where agents manage real funds.
+
+### 4. Pre-Execution Simulation
+
+OWL adds a dry-run layer that simulates swaps, transfers, and bridges before broadcasting. The agent sees expected output, fees, and price impact before committing. This extends OWS's `simulate()` concept into a full pre-execution review workflow that agents can use autonomously.
+
+### 5. Reactive Monitoring
+
+The alert system polls OWS wallet data and dispatches notifications when conditions are met. This turns OWS from a pull-based system (agent asks for balance) into a push-based system (agent gets notified when balance changes). Supports Telegram and webhooks for cross-device delivery.
+
+### 6. Agent-Native Interface
+
+The terminal provides a natural-language interface over OWS. Instead of agents needing to know CLI flags, they get 35 MCP tools they can call directly. The terminal agent handles error recovery automatically: if a channel isn't configured, it asks for credentials and sets them up. If a wallet is missing, it creates one.
+
+This demonstrates OWS as a foundational primitive: agents don't need to understand wallet internals, they just use OWS through OWL's tool layer.
+
+## How OWL Implements the OWS Standard
+
+OWS is MoonPay's open-source, CC0-licensed wallet infrastructure standard for local-first, chain-agnostic wallet management. The standard invites projects to implement it, extend it with new chain plugins or policy types, and build agents that use OWS as their wallet layer. OWL does all three.
+
+### Implementing the Standard
+
+OWL does not reimplement wallet operations. Every swap, transfer, bridge, balance check, and signing operation goes through MoonPay's OWS implementation (`mp` CLI). OWL's MCP server wraps `mp mcp` as a transparent proxy, meaning every MoonPay tool works exactly as the standard defines. This is a deliberate choice: OWL validates that a third-party project can build a full coordination layer on top of OWS without touching wallet internals.
+
+### Extending with New Policy Types
+
+OWS defines a policy engine that evaluates constraints before signing: spending limits, allowlists, denylists, chain restrictions, simulation requirements. OWL extends this with an entirely new policy category that OWS did not originally cover: **inter-agent delegation policies**.
+
+```
+  OWS Policy Engine               OWL Policy Extensions
+  +-------------------------+     +----------------------------------+
+  | Spending limits         |     | Per-peer daily USD limits        |
+  | Token allowlists        |     | Per-peer token whitelists        |
+  | Chain restrictions      |     | Per-peer operation whitelists    |
+  | Simulation gates        |     | Auto-approve thresholds          |
+  | Time-based rules        |     | Tunnel-scoped policy binding     |
+  +-------------------------+     +----------------------------------+
+       applies to: owner              applies to: delegated peers
+```
+
+This proves the OWS policy model is extensible. OWL adds policies that scope not just what operations are allowed, but who is allowed to request them, through which tunnel, and up to what value. These are new policy types layered on top of OWS, not modifications to it.
+
+### Building Agents on OWS as Their Wallet Layer
+
+OWL's terminal agent treats OWS as a black-box wallet primitive. The agent calls `mp_token_swap`, `mp_wallet_create`, `mp_message_sign` through MCP. It never constructs transactions, manages keys, or talks to RPCs directly. OWS handles all of that.
+
+This is the pattern OWS was designed for: agents use OWS as their wallet layer, and OWL proves it works. The agent:
+
+- Creates wallets via OWS (`mp_wallet_create`)
+- Signs messages via OWS (`mp_message_sign`) for tunnel authentication
+- Reads balances via OWS (`mp_token_balance`)
+- Executes trades via OWS (`mp_token_swap`, `mp_token_bridge`, `mp_token_transfer`)
+- Simulates before committing via OWL's dry-run layer (which itself calls OWS)
+- Audits every operation through the ledger
+- Coordinates with other agents through tunnels (which use OWS signing for auth)
+
+The entire OWL stack is a demonstration that OWS works as a foundational primitive for autonomous agents. Not a toy demo, but infrastructure that handles delegation, governance, audit, and multi-agent coordination while OWS handles the hard part: secure, local-first, chain-agnostic wallet operations.
 
 ## Architecture
 
 ```
-                         +---------------------+
-                         |    AI Agents         |
-                         |  (GPT, Nemotron, etc)|
-                         +----------+----------+
-                                    |
-                              MCP (stdio)
-                                    |
-                         +----------v----------+
-                         |     owl mcp          |
-                         |  +---------------+   |
-                         |  | owl tools     |   |
-                         |  | (22 custom)   |   |
-                         |  +-------+-------+   |
-                         |          |           |
-                         |  +-------v-------+   |
-                         |  | mp mcp proxy  |   |
-                         |  | (pass-through)|   |
-                         |  +-------+-------+   |
-                         +----------+-----------+
-                                    |
-                              MCP (stdio)
-                                    |
-                         +----------v----------+
-                         |     mp mcp           |
-                         |  (MoonPay CLI)       |
-                         +----------+----------+
-                                    |
-                     +--------------+--------------+
-                     |              |              |
-                  Solana        Ethereum        Bitcoin
-                  Base          Polygon         TRON
-                  Arbitrum      Optimism        Avalanche
-                  BNB
+  AI Agents (any LLM via MCP)
+         |
+     MCP (stdio)
+         |
+     owl mcp
+     +-----------------------------+
+     | 22 owl_* tools              |
+     | (tunnels, alerts, ledger,   |
+     |  reports, dryrun, terminal) |
+     +-------------+---------------+
+                   |
+     +-------------v---------------+
+     | mp mcp proxy                |
+     | (13 mp_* tools, passthrough)|
+     +-------------+---------------+
+                   |
+               mp mcp
+                   |
+     +-------------v---------------+
+     | OWS Signing Enclave         |
+     | (local keys, never exposed) |
+     +-----------------------------+
+                   |
+      Solana  Ethereum  Base  Polygon
+      Arbitrum  Optimism  BNB  Avalanche
+      Bitcoin  TRON
 ```
 
-Agents connect to `owl mcp` which acts as a single gateway. All MoonPay tools are proxied transparently. OWL adds 22 tools on top for tunnel, alert, terminal, ledger, report, and dry-run operations.
+## Seven Primitives
 
-## Terminal
+### Terminal
 
-A persistent TUI dashboard that wraps MoonPay CLI.
+TUI dashboard with integrated AI agent. Auto-prompts for LLM provider setup on first launch (OpenRouter, OpenAI, Ollama). The agent has all 35 tools and handles error recovery autonomously.
 
 ```
 +------------------------------------------------------------------+
-|  OWL Terminal  |  wallet: main  |  agent: openrouter/nemotron  |  $5,248  |
+|  OWL Terminal  |  wallet: main  |  openrouter/nemotron  |  $5,248 |
 +------------------------------------------------------------------+
-|  Portfolio                                                        |
-|    SOL         12.4                                    $2,108     |
-|    ETH          0.8                                    $2,640     |
-|    USDC       500.0                                      $500     |
-+------------------------------------------------------------------+
-|  Activity                                                         |
-|    14:32:01 [ALERT]  BONK +18.2% in 47min                       |
-|    14:31:45 [TUNNEL] Agent-B proposed: swap 50 USDC              |
-|    14:30:12 [AGENT]  Connected: openrouter/nemotron-3-super-120b  |
-|    14:30:00 [INFO]   > show portfolio                            |
-+------------------------------------------------------------------+
-|  > _                                                              |
+|  > swap 10 USDC to SOL on solana                                  |
+|  owl > Swapped 10 USDC for 0.067 SOL on solana.                  |
 +------------------------------------------------------------------+
 ```
 
-On first launch, an interactive wizard prompts for AI agent configuration:
+### Tunnel
 
-```
-  Provider:  openrouter / openai / ollama
-  Model:     nvidia/nemotron-3-super-120b-a12b:free (or any model the provider supports)
-  API Key:   sk-...
-```
+Multi-agent wallet sharing. Host creates tunnel, peer connects via Unix socket or WebSocket. Auth via challenge-response using OWS `signMessage`. Policy engine controls what peers can do. Keys never leave the host.
 
-Config persists to `~/.config/owl/agent.json`. Reconfigure anytime with `agent setup`.
+### Alerts
 
-## Tunnel
+Price monitoring daemon. Polls every 10 seconds, dispatches to Telegram or webhook when conditions trigger. Channel credentials validated before alert creation.
 
-Multi-agent wallet sharing without key exposure.
+### Activity Ledger
 
-```
-  Machine A (Host)                        Machine B (Peer)
-  +------------------+                    +------------------+
-  |  owl tunnel      |                    |  owl tunnel      |
-  |  create          |                    |  connect         |
-  |                  |                    |                  |
-  |  Wallet Keys     |   Unix / WebSocket |  No Keys         |
-  |  [encrypted]     | <===============> |  [auth only]     |
-  |                  |                    |                  |
-  |  Policy Engine   |                    |  Propose TX      |
-  |  Sign + Broadcast|                    |  Wait for result |
-  +------------------+                    +------------------+
-```
+SQLite audit trail. Every tool call logged automatically. Query by tool, wallet, chain, date, status. Export to JSON or CSV.
 
-### Authentication Flow
+### Dry Run
 
-```
-  Peer                              Host
-    |                                 |
-    |  -------- connect ---------->   |
-    |                                 |
-    |  <-- auth.challenge (nonce) --  |
-    |                                 |
-    |  mp message sign --message nonce|
-    |                                 |
-    |  -- auth.verify (sig, addr) ->  |
-    |                                 |
-    |  verify signature on-chain      |
-    |                                 |
-    |  <---- auth.success ----------  |
-```
+Simulate swap, transfer, or bridge without broadcasting. Returns expected output for agent review before committing real funds.
 
-Keys never leave the host. Peers prove wallet ownership via `mp message sign` challenge-response.
+### Reports
 
-### Policy Engine
+Spending summaries (daily, weekly, monthly) and unified portfolio view across all wallets and chains. Built from ledger data.
 
-```
-  Incoming Proposal
-        |
-        v
-  +-----+------+
-  | Has policy? |--No--> REJECT
-  +-----+------+
-        | Yes
-        v
-  +-----+------+
-  | Daily limit |--Exceeded--> REJECT
-  | check       |
-  +-----+------+
-        | OK
-        v
-  +-----+------+
-  | Auto-approve|--Yes--> EXECUTE via mp
-  | rules match?|
-  +-----+------+
-        | No
-        v
-  Queue for manual approval
-  (shows in Terminal + Alerts)
-```
+### Web Dashboard
 
-Policies are per-peer and support:
-- Daily USD spending limits
-- Token whitelists
-- Operation whitelists (swap, transfer, bridge)
-- Auto-approve thresholds
-
-## Alerts
-
-Cross-device price monitoring via Telegram and webhooks.
-
-```
-  +----------------+       +-----------------+
-  |  owl alert     |       |  mp token       |
-  |  daemon        +------>|  retrieve       |
-  |  (polling 10s) |       |  (price data)   |
-  +-------+--------+       +-----------------+
-          |
-          | condition met?
-          |
-    +-----v------+
-    |  Dispatcher |
-    +-----+------+
-          |
-     +----+----+
-     |         |
-     v         v
-  Telegram   Webhook
-  Bot API    HTTP POST
-     |         |
-     v         v
-  Phone     Slack / Discord /
-             Custom server
-```
-
-### Condition Types
-
-| Type | Triggers when |
-|------|--------------|
-| `price_above` | Price >= threshold |
-| `price_below` | Price <= threshold |
-| `percent_change` | % move in time window |
-| `balance_below` | Wallet balance drops |
-
-## Activity Ledger
-
-SQLite-backed audit trail of every tool call made by any agent.
-
-```
-  Agent calls tool
-        |
-        v
-  +-----+------+
-  | Log entry  |  tool, args, result, wallet, chain, status, timestamp
-  +-----+------+
-        |
-        v
-  ~/.config/owl/ledger.db
-        |
-  +-----+------+-----+------+
-  |            |             |
-  query      stats        export
-  (filter)   (summary)   (JSON/CSV)
-```
-
-Every tool invocation (owl_* and mp_*) is recorded automatically. Query, aggregate, or export for compliance and debugging.
-
-## Terminal Agent Tools
-
-The terminal agent has access to all 22 OWL tools plus 13 MoonPay tools via the configured LLM:
-
-| MoonPay Tool | Description |
-|-------------|-------------|
-| `mp_token_balance` | Check token balances |
-| `mp_token_swap` | Swap tokens |
-| `mp_token_transfer` | Transfer tokens |
-| `mp_token_search` | Search for tokens |
-| `mp_token_trending` | Get trending tokens |
-| `mp_token_bridge` | Bridge tokens cross-chain |
-| `mp_token_retrieve` | Get token price/details |
-| `mp_transaction_list` | List transactions |
-| `mp_wallet_list` | List wallets |
-| `mp_wallet_create` | Create a new wallet |
-| `mp_message_sign` | Sign a message |
-| `mp_buy` | Buy crypto with fiat |
-| `mp_deposit_create` | Create a deposit address |
-
-All tool calls are logged to the Activity Ledger automatically.
-
-## Dry Run Environment
-
-Simulate any write operation before broadcasting. Uses MoonPay CLI's `--simulation true` flag under the hood.
-
-```
-  User: "dry run swap 10 USDC to SOL"
-        |
-        v
-  +-----+------+
-  | owl dryrun |  --simulation true
-  +-----+------+
-        |
-        v
-  +-----+------+
-  | mp token   |  builds tx, gets quote
-  | swap       |  does NOT broadcast
-  +-----+------+
-        |
-        v
-  Returns: quote, fees, expected output
-```
-
-Supports swap, transfer, and bridge operations. The agent can show the user what would happen before they commit.
-
-```bash
-npx moonpay-owl dryrun swap -w main -c solana --from USDC --amount 10 --to SOL
-```
-
-## Spending Reports
-
-Aggregate ledger data into actionable summaries.
-
-```bash
-npx moonpay-owl report daily            # today's swaps, transfers, errors
-npx moonpay-owl report weekly -w main   # last 7 days for a wallet
-npx moonpay-owl report portfolio        # all wallets, all chains, unified view
-```
-
-Reports include operation breakdown (swaps, transfers, bridges), chain distribution, error rate, and recent write operations. The agent can generate these on demand: "show me my weekly report."
-
-## Web Dashboard
-
-Local read-only dashboard served at `http://127.0.0.1:3131`.
-
-```bash
-npx moonpay-owl web                # default port 3131
-npx moonpay-owl web --port 8080    # custom port
-```
-
-```
-+------------------------------------------------------------------+
-|  OWL  | Portfolio | Activity | Alerts | Tunnels | Reports | Config |
-+------------------------------------------------------------------+
-|                                                                    |
-|  main (hd wallet)                                                  |
-|    solana      577FKh...miM                              --        |
-|    ethereum    0x2806...cf2c                              --        |
-|    base        0x2806...cf2c                              --        |
-|    bitcoin     bc1qa5...5xt                               --        |
-|                                                                    |
-+------------------------------------------------------------------+
-```
-
-Six tabs: Portfolio (wallet balances across all chains), Activity (ledger feed with filters), Alerts (active rules and trigger history), Tunnels (peers and proposals), Reports (daily/weekly/monthly summaries), Config (agent and channel settings).
-
-Binds to localhost only. No write operations. API key redacted in config view. Auto-refreshes portfolio every 30s and activity every 10s.
-
-## How It Builds on MoonPay
-
-OWL is a partner extension, not a fork. It follows the same pattern as Messari, Polymarket, and Myriad in the MoonPay skills ecosystem.
-
-```
-  +------------------------------------------+
-  |           MoonPay Skills Repo             |
-  |                                           |
-  |  moonpay-auth    moonpay-swap-tokens      |
-  |  moonpay-deposit moonpay-trading-auto     |
-  |  messari-x402    myriad-prediction        |
-  |                                           |
-  |  owl-terminal    owl-tunnel               |  <-- our skills
-  |  owl-alerts      owl-ledger              |
-  |  owl-reports     owl-dryrun              |
-  +------------------------------------------+
-              |
-              | agents load skills
-              v
-  +------------------------------------------+
-  |           CLIs                            |
-  |                                           |
-  |  mp (MoonPay)     owl (this project)      |
-  |  pc (Polymarket)  messari-cli             |
-  +------------------------------------------+
-              |
-              | tools execute via
-              v
-  +------------------------------------------+
-  |           MCP Servers                     |
-  |                                           |
-  |  mp mcp  -->  owl mcp (wraps mp mcp)      |
-  +------------------------------------------+
-```
+Local read-only dashboard at `127.0.0.1:3131`. Six tabs for portfolio, activity, alerts, tunnels, reports, and config. Serves `/skill.md` for agent discovery. API keys redacted.
 
 ## Quick Start
 
 ```bash
-# Install MoonPay CLI
 npm install -g @moonpay/cli
-
-# Authenticate with MoonPay
 mp login --email you@example.com
 mp verify --email you@example.com --code 123456
-
-# Create a wallet
 mp wallet create --name main
 
-# Launch terminal
-npx moonpay-owl terminal --wallet main
+npm install -g moonpay-owl
+owl terminal --wallet main
 ```
+
+## MCP Configuration
+
+```json
+{
+  "mcpServers": {
+    "owl": {
+      "command": "owl",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+All 35 tools (22 owl + 13 mp) available through a single MCP server.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `npx moonpay-owl terminal` | Start TUI dashboard |
-| `npx moonpay-owl web` | Start local read-only web dashboard |
-| `npx moonpay-owl mcp` | Start MCP server (stdio) |
-| `npx moonpay-owl tunnel create` | Create a wallet sharing tunnel |
-| `npx moonpay-owl tunnel connect` | Connect to a tunnel as peer |
-| `npx moonpay-owl tunnel list` | List active tunnels |
-| `npx moonpay-owl alert add` | Add a price alert |
-| `npx moonpay-owl alert list` | List active alerts |
-| `npx moonpay-owl alert remove` | Remove an alert |
-| `npx moonpay-owl alert daemon` | Start alert monitoring |
-| `npx moonpay-owl alert channels` | Configure Telegram / webhook |
-| `npx moonpay-owl ledger list` | Show recent ledger entries |
-| `npx moonpay-owl ledger stats` | Show ledger statistics |
-| `npx moonpay-owl ledger export` | Export ledger (JSON/CSV) |
-| `npx moonpay-owl ledger clear` | Clear ledger entries |
-| `npx moonpay-owl report daily` | Today's spending report |
-| `npx moonpay-owl report weekly` | Last 7 days report |
-| `npx moonpay-owl report monthly` | Last 30 days report |
-| `npx moonpay-owl report portfolio` | All wallets, all chains view |
-| `npx moonpay-owl dryrun swap` | Simulate a swap |
-| `npx moonpay-owl dryrun transfer` | Simulate a transfer |
-| `npx moonpay-owl dryrun bridge` | Simulate a bridge |
+| `owl terminal` | TUI dashboard with AI agent |
+| `owl mcp` | Start MCP server (stdio) |
+| `owl web` | Local read-only dashboard |
+| `owl reset` | Remove agent credentials (`--all` for everything) |
+| `owl tunnel create/connect/list` | Multi-agent wallet sharing |
+| `owl alert add/list/remove/daemon/channels` | Price monitoring |
+| `owl ledger list/stats/export/clear` | Audit trail |
+| `owl report daily/weekly/monthly/portfolio` | Spending reports |
+| `owl dryrun swap/transfer/bridge` | Pre-execution simulation |
 
-## MCP Tools
+## MCP Tools (22)
 
-All tools are prefixed `owl_` to avoid conflicts with MoonPay's tools.
-
-| Tool | Description |
-|------|-------------|
-| `owl_tunnel_create` | Create a tunnel |
-| `owl_tunnel_connect` | Connect to a tunnel |
-| `owl_tunnel_list` | List tunnels |
-| `owl_tunnel_propose` | Propose TX through tunnel |
-| `owl_tunnel_approve` | Approve pending proposal |
-| `owl_tunnel_reject` | Reject pending proposal |
-| `owl_tunnel_policy_set` | Set tunnel policies |
-| `owl_tunnel_policy_get` | Get tunnel policies |
-| `owl_alert_add` | Add alert rule |
-| `owl_alert_list` | List alerts |
-| `owl_alert_remove` | Remove alert |
-| `owl_alert_channels_set` | Configure channels |
-| `owl_alert_history` | View triggered alerts |
-| `owl_terminal_start` | Start terminal |
-| `owl_terminal_status` | Get terminal state |
-| `owl_ledger_query` | Query ledger entries |
-| `owl_ledger_stats` | Get ledger statistics |
-| `owl_ledger_export` | Export ledger (JSON/CSV) |
-| `owl_ledger_clear` | Clear ledger entries |
-| `owl_report_generate` | Generate spending report (daily/weekly/monthly) |
-| `owl_portfolio_all` | Unified portfolio across all wallets and chains |
-| `owl_dryrun` | Simulate swap/transfer/bridge without broadcasting |
+| Tool | What it extends in OWS |
+|------|----------------------|
+| `owl_tunnel_create` | Delegated wallet access |
+| `owl_tunnel_connect` | Agent-to-agent auth via signMessage |
+| `owl_tunnel_list` | Tunnel state management |
+| `owl_tunnel_propose` | Transaction delegation |
+| `owl_tunnel_approve/reject` | Multi-agent governance |
+| `owl_tunnel_policy_set/get` | Extended policy engine |
+| `owl_alert_add/list/remove` | Reactive monitoring over OWS data |
+| `owl_alert_channels_set` | Cross-device notification |
+| `owl_alert_history` | Alert audit trail |
+| `owl_ledger_query/stats/export/clear` | Signing audit infrastructure |
+| `owl_report_generate` | Spending analytics |
+| `owl_portfolio_all` | Cross-wallet, cross-chain aggregation |
+| `owl_terminal_start/status` | Agent-native UX |
+| `owl_dryrun` | Pre-execution simulation |
 
 ## License
 

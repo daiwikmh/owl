@@ -1,17 +1,19 @@
 {
   "name": "moonpay-owl",
-  "version": "0.1.9",
+  "version": "0.1.13",
   "description": "Infrastructure extensions for MoonPay OWS: terminal, tunnel, and alerts",
   "type": "module",
   "license": "CC0-1.0",
   "files": [
     "dist",
-    "docs"
+    "docs",
+    "scripts"
   ],
   "bin": {
     "owl": "./dist/cli.js"
   },
   "scripts": {
+    "postinstall": "node scripts/postinstall.js",
     "prepublishOnly": "tsup",
     "build": "tsup",
     "dev": "tsup --watch",

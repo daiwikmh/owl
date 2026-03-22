@@ -1,11 +1,36 @@
-# OWL: Infrastructure Extensions for MoonPay OWS
+# OWL: Multi-Agent Coordination Layer for the Open Wallet Standard
 
-OWL turns MoonPay's wallet layer into a multi-agent coordination platform. It adds tunnels, alerts, an activity ledger, dry-run simulation, spending reports, and a TUI terminal on top of MoonPay's Open Wallet Standard.
+OWS gives agents a wallet. OWL gives agents the infrastructure to coordinate around that wallet.
+
+OWL extends MoonPay's Open Wallet Standard (OWS) with the primitives autonomous agents need to work together: delegated wallet access without key exposure, per-peer policy enforcement, an audit trail for every operation, pre-execution simulation, reactive monitoring, and an agent-native interface. Every operation goes through OWS. OWL adds coordination on top.
 
 **Package:** `moonpay-owl` (npm)
 **CLI binary:** `owl`
 **MCP server:** `owl mcp` (stdio)
 **Requires:** `@moonpay/cli` (`mp`) authenticated and a wallet created
+
+## How OWL Extends OWS
+
+| OWS provides | OWL adds |
+|-------------|----------|
+| Key generation + signing enclave | Delegated access via tunnels (keys never leave host) |
+| Basic policy engine | Per-peer policies: spending limits, token whitelists, auto-approve |
+| Sign/send operations | Pre-execution simulation (dry run before broadcast) |
+| Pull-based balance queries | Push-based alerts (Telegram, webhook) |
+| MCP tool interface | 22 additional tools for coordination, audit, and monitoring |
+| Local-first storage | Append-only audit ledger for every tool call |
+
+OWL does not fork OWS. It demonstrates that OWS's design (local keys, policy engine, MCP interface) is composable: third parties can layer domain-specific infrastructure on top without modifying the standard itself.
+
+## Implementing, Extending, and Building on OWS
+
+OWS is MoonPay's open-source, CC0-licensed wallet infrastructure standard. It invites projects to implement the standard, extend it with new chain plugins or policy types, and build agents that use OWS as their wallet layer. OWL does all three:
+
+**Implements:** Every wallet operation (swap, transfer, bridge, sign, balance) goes through MoonPay's OWS implementation via `mp` CLI. OWL never touches keys or constructs transactions. This validates that a full coordination layer can be built on OWS without modifying wallet internals.
+
+**Extends with new policy types:** OWS defines a policy engine (spending limits, allowlists, simulation gates). OWL adds inter-agent delegation policies: per-peer spending limits, per-peer token whitelists, per-peer operation whitelists, and auto-approve thresholds scoped to tunnel connections. These are new policy types that OWS did not originally cover, layered on top without changing the base standard.
+
+**Builds agents on OWS:** OWL's terminal agent uses OWS as a black-box wallet primitive. It creates wallets, signs messages for tunnel auth, reads balances, executes trades, and simulates operations, all through OWS's MCP interface. The entire OWL stack is a working demonstration that OWS serves as a foundational primitive for autonomous multi-agent systems.
 
 ---
 
