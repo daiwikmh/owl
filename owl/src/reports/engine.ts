@@ -69,7 +69,7 @@ export async function portfolioAll(): Promise<PortfolioResult> {
     const holdings: ChainHolding[] = [];
     for (const chain of chains) {
       try {
-        const raw = await execMp(["token", "balance", "list", "--wallet", name, "--chain", chain, "-f", "compact"]);
+        const raw = await execMp(["token", "balance", "list", "--wallet", name, "--chain", chain]);
         if (raw && !raw.includes("No balances") && raw.trim().length > 5) {
           holdings.push({ chain, raw: raw.trim() });
         }
@@ -85,24 +85,57 @@ export async function portfolioAll(): Promise<PortfolioResult> {
   return { wallets, total_usd: 0 };
 }
 
-// dry run: simulate a transaction without broadcasting
+// resolve token symbol to info via mp token search
+async function getTokenPrice(token: string, chain: string): Promise<string> {
+  try {
+    return (await execMp(["token", "search", "--query", token, "--chain", chain, "--limit", "1"])).trim();
+  } catch {
+    return `Could not retrieve price for ${token} on ${chain}`;
+  }
+}
+
+// dry run: estimate a transaction without broadcasting
 export async function dryRun(opts: {
   operation: "swap" | "transfer" | "bridge";
   wallet: string;
   chain: string;
   params: Record<string, string>;
 }): Promise<DryRunResult> {
-  const cmdArgs = buildDryRunArgs(opts);
+  const p = opts.params;
   try {
-    const output = await execMp(cmdArgs);
+    let output = "";
+    switch (opts.operation) {
+      case "swap": {
+        const fromInfo = await getTokenPrice(p.from_token ?? "", opts.chain);
+        const toInfo = await getTokenPrice(p.to_token ?? "", opts.chain);
+        output = `Swap estimate: ${p.from_amount} ${p.from_token} -> ${p.to_token}\n`;
+        output += `From token: ${fromInfo}\nTo token: ${toInfo}`;
+        break;
+      }
+      case "transfer": {
+        const info = await getTokenPrice(p.token ?? "", opts.chain);
+        output = `Transfer estimate: ${p.amount} ${p.token} -> ${p.to}\n`;
+        output += `Token: ${info}`;
+        break;
+      }
+      case "bridge": {
+        const fromInfo = await getTokenPrice(p.from_token ?? "", opts.chain);
+        const toInfo = await getTokenPrice(p.to_token ?? "", p.to_chain ?? opts.chain);
+        output = `Bridge estimate: ${p.from_amount} ${p.from_token} (${opts.chain}) -> ${p.to_token} (${p.to_chain})\n`;
+        output += `From token: ${fromInfo}\nTo token: ${toInfo}`;
+        break;
+      }
+      default:
+        output = "Unsupported operation";
+    }
     return {
       operation: opts.operation,
       wallet: opts.wallet,
       chain: opts.chain,
       simulation: true,
       success: true,
-      output: output.trim(),
-      params: opts.params,
+      output,
+      params: p,
     };
   } catch (err) {
     return {
@@ -112,52 +145,8 @@ export async function dryRun(opts: {
       simulation: true,
       success: false,
       output: (err as Error).message,
-      params: opts.params,
+      params: p,
     };
-  }
-}
-
-function buildDryRunArgs(opts: {
-  operation: string;
-  wallet: string;
-  chain: string;
-  params: Record<string, string>;
-}): string[] {
-  const p = opts.params;
-  switch (opts.operation) {
-    case "swap":
-      return [
-        "token", "swap",
-        "--wallet", opts.wallet,
-        "--chain", opts.chain,
-        "--from-token", p.from_token ?? "",
-        "--from-amount", p.from_amount ?? "",
-        "--to-token", p.to_token ?? "",
-        "--simulation", "true",
-      ];
-    case "transfer":
-      return [
-        "token", "transfer",
-        "--wallet", opts.wallet,
-        "--chain", opts.chain,
-        "--token", p.token ?? "",
-        "--amount", p.amount ?? "",
-        "--to", p.to ?? "",
-        "--simulation", "true",
-      ];
-    case "bridge":
-      return [
-        "token", "bridge",
-        "--from-wallet", opts.wallet,
-        "--from-chain", opts.chain,
-        "--from-token", p.from_token ?? "",
-        "--from-amount", p.from_amount ?? "",
-        "--to-chain", p.to_chain ?? "",
-        "--to-token", p.to_token ?? "",
-        "--simulation", "true",
-      ];
-    default:
-      return ["echo", "unsupported operation"];
   }
 }
 
@@ -192,10 +181,8 @@ function isWriteOp(tool: string): boolean {
 function parseWalletNames(output: string): string[] {
   const names: string[] = [];
   for (const line of output.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("Name") || trimmed.startsWith("---")) continue;
-    const name = trimmed.split(/\s+/)[0];
-    if (name && name.length > 0) names.push(name);
+    const m = line.match(/^-?\s*name:\s*(.+)/);
+    if (m) names.push(m[1].trim());
   }
   return names;
 }

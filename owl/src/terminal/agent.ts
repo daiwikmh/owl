@@ -505,7 +505,7 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
     let result: unknown;
     switch (name) {
       case "mp_token_balance":
-        result = await execMp(["token", "balance", "list", "--wallet", String(args.wallet), "--chain", String(args.chain), "-f", "compact"]);
+        result = await execMp(["token", "balance", "list", "--wallet", String(args.wallet), "--chain", String(args.chain)]);
         break;
       case "mp_token_swap":
         result = await execMp(["token", "swap", "--wallet", String(args.wallet), "--chain", String(args.chain), "--from-token", String(args.from_token), "--from-amount", String(args.from_amount), "--to-token", String(args.to_token)]);
@@ -514,13 +514,13 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
         result = await execMp(["token", "transfer", "--wallet", String(args.wallet), "--chain", String(args.chain), "--token", String(args.token), "--amount", String(args.amount), "--to", String(args.to)]);
         break;
       case "mp_token_search":
-        result = await execMp(["token", "search", "--query", String(args.query), "--chain", String(args.chain), "--limit", "5", "-f", "compact"]);
+        result = await execMp(["token", "search", "--query", String(args.query), "--chain", String(args.chain), "--limit", "5"]);
         break;
       case "mp_transaction_list":
-        result = await execMp(args.wallet ? ["transaction", "list", "--wallet", String(args.wallet), "-f", "compact"] : ["transaction", "list", "-f", "compact"]);
+        result = await execMp(args.wallet ? ["transaction", "list", "--wallet", String(args.wallet)] : ["transaction", "list"]);
         break;
       case "mp_token_trending":
-        result = await execMp(["token", "trending", "list", "--chain", String(args.chain), "--limit", String(args.limit ?? 10), "-f", "compact"]);
+        result = await execMp(["token", "trending", "list", "--chain", String(args.chain), "--limit", String(args.limit ?? 10)]);
         break;
       case "mp_token_bridge":
         result = await execMp(["token", "bridge", "--from-wallet", String(args.from_wallet), "--from-chain", String(args.from_chain), "--from-token", String(args.from_token), "--from-amount", String(args.from_amount), "--to-chain", String(args.to_chain), "--to-token", String(args.to_token)]);

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 const pages = [
   { title: "Getting Started", path: "/docs", keywords: "install setup quickstart" },
   { title: "Terminal", path: "/docs/terminal", keywords: "tui dashboard portfolio agent wizard" },
+  { title: "Web Dashboard", path: "/docs/web", keywords: "web dashboard local http api portfolio activity alerts tunnels reports config" },
   { title: "Tunnel", path: "/docs/tunnel", keywords: "wallet sharing policy auth peer host" },
   { title: "Alerts", path: "/docs/alerts", keywords: "price monitor telegram webhook daemon" },
   { title: "Activity Ledger", path: "/docs/activity-ledger", keywords: "ledger audit log history export csv json stats" },

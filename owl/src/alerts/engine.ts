@@ -82,18 +82,19 @@ export async function startDaemon() {
     for (const rule of rules) {
       try {
         const output = await execMp([
+          "--json",
           "token",
-          "retrieve",
-          "--token",
+          "search",
+          "--query",
           rule.token,
           "--chain",
           rule.chain,
-          "-f",
-          "compact",
+          "--limit",
+          "1",
         ]);
 
         const data = JSON.parse(output);
-        const price = data.price ?? data.priceUsd ?? 0;
+        const price = data.items?.[0]?.marketData?.price ?? 0;
         const triggered = evaluateCondition(rule, price);
 
         if (triggered) {

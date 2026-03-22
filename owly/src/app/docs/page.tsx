@@ -56,6 +56,9 @@ owl terminal --wallet main
 # start MCP server for AI agents
 owl mcp
 
+# open the web dashboard
+owl web
+
 # add a price alert
 owl alert add -t So11... -c solana --condition price_above:200 --channel telegram
 
@@ -79,6 +82,10 @@ owl tunnel create -w main -n my-tunnel`}</code>
             <tr>
               <td>owl terminal</td>
               <td>Start TUI dashboard</td>
+            </tr>
+            <tr>
+              <td>owl web</td>
+              <td>Start local read-only web dashboard</td>
             </tr>
             <tr>
               <td>owl mcp</td>

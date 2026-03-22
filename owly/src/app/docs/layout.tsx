@@ -20,6 +20,15 @@ const sections = [
         ],
       },
       {
+        title: "Web Dashboard",
+        href: "/docs/web",
+        children: [
+          { title: "owl web", href: "/docs/web#usage" },
+          { title: "Panels", href: "/docs/web#panels" },
+          { title: "API Endpoints", href: "/docs/web#api" },
+        ],
+      },
+      {
         title: "Tunnel",
         href: "/docs/tunnel",
         children: [

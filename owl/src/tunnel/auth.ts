@@ -20,8 +20,6 @@ export async function signChallenge(
     chain,
     "--message",
     nonce,
-    "-f",
-    "compact",
   ]);
 
   const data = JSON.parse(output);

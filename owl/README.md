@@ -270,6 +270,33 @@ npx moonpay-owl report portfolio        # all wallets, all chains, unified view
 
 Reports include operation breakdown (swaps, transfers, bridges), chain distribution, error rate, and recent write operations. The agent can generate these on demand: "show me my weekly report."
 
+## Web Dashboard
+
+Local read-only dashboard served at `http://127.0.0.1:3131`.
+
+```bash
+npx moonpay-owl web                # default port 3131
+npx moonpay-owl web --port 8080    # custom port
+```
+
+```
++------------------------------------------------------------------+
+|  OWL  | Portfolio | Activity | Alerts | Tunnels | Reports | Config |
++------------------------------------------------------------------+
+|                                                                    |
+|  main (hd wallet)                                                  |
+|    solana      577FKh...miM                              --        |
+|    ethereum    0x2806...cf2c                              --        |
+|    base        0x2806...cf2c                              --        |
+|    bitcoin     bc1qa5...5xt                               --        |
+|                                                                    |
++------------------------------------------------------------------+
+```
+
+Six tabs: Portfolio (wallet balances across all chains), Activity (ledger feed with filters), Alerts (active rules and trigger history), Tunnels (peers and proposals), Reports (daily/weekly/monthly summaries), Config (agent and channel settings).
+
+Binds to localhost only. No write operations. API key redacted in config view. Auto-refreshes portfolio every 30s and activity every 10s.
+
 ## How It Builds on MoonPay
 
 OWL is a partner extension, not a fork. It follows the same pattern as Messari, Polymarket, and Myriad in the MoonPay skills ecosystem.
@@ -327,6 +354,7 @@ npx moonpay-owl terminal --wallet main
 | Command | Description |
 |---------|-------------|
 | `npx moonpay-owl terminal` | Start TUI dashboard |
+| `npx moonpay-owl web` | Start local read-only web dashboard |
 | `npx moonpay-owl mcp` | Start MCP server (stdio) |
 | `npx moonpay-owl tunnel create` | Create a wallet sharing tunnel |
 | `npx moonpay-owl tunnel connect` | Connect to a tunnel as peer |

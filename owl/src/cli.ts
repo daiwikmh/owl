@@ -303,4 +303,13 @@ function printDryRun(r: any) {
   console.log(`  Output:\n${r.output}\n`);
 }
 
+program
+  .command("web")
+  .description("Start local read-only dashboard")
+  .option("-p, --port <port>", "Port", "3131")
+  .action(async (opts) => {
+    const { startWebServer } = await import("./web/server.js");
+    await startWebServer(parseInt(opts.port));
+  });
+
 program.parse();

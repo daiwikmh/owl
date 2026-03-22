@@ -38,7 +38,7 @@ function printBanner(wallet: string, agentConfig: AgentConfig | null) {
 
 async function showPortfolio(wallet: string) {
   try {
-    const out = await execMp(["token", "balance", "list", "--wallet", wallet, "--chain", "solana", "-f", "compact"]);
+    const out = await execMp(["token", "balance", "list", "--wallet", wallet, "--chain", "solana"]);
     const data = JSON.parse(out);
     if (Array.isArray(data) && data.length > 0) {
       ln(`${D}  portfolio:${R}`);
