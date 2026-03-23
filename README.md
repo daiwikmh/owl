@@ -4,11 +4,11 @@ Multi-agent coordination layer for the Open Wallet Standard.
 
 OWL extends MoonPay's OWS from a single-agent wallet into infrastructure where multiple AI agents coordinate around shared wallets. Keys never leave the host. Every operation goes through OWS. OWL adds delegation, policy enforcement, audit, simulation, alerts, and an agent-native interface on top.
 
-**Live:** [owl-moonpay.vercel.app](https://owl-moonpay.vercel.app)
-**Docs:** [owl-moonpay.vercel.app/docs](https://owl-moonpay.vercel.app/docs)
-**npm:** [moonpay-owl](https://www.npmjs.com/package/moonpay-owl)
-**Skill file:** [owl-moonpay.vercel.app/docs/skill.md](https://owl-moonpay.vercel.app/docs)
-**License:** CC0
+[![Live](https://img.shields.io/badge/Live-owl--moonpay.vercel.app-00C389?logo=vercel)](https://owl-moonpay.vercel.app)
+[![Docs](https://img.shields.io/badge/Docs-owl--moonpay.vercel.app%2Fdocs-00C389?logo=readthedocs)](https://owl-moonpay.vercel.app/docs)
+[![npm](https://img.shields.io/badge/npm-moonpay--owl-CB3837?logo=npm)](https://www.npmjs.com/package/moonpay-owl)
+[![GitHub](https://img.shields.io/badge/GitHub-daiwikmh%2Fowl-181717?logo=github)](https://github.com/daiwikmh/owl)
+[![License](https://img.shields.io/badge/License-CC0-blue)](https://creativecommons.org/publicdomain/zero/1.0/)
 
 ## What OWS Provides vs What OWL Adds
 
@@ -27,23 +27,6 @@ OWL extends MoonPay's OWS from a single-agent wallet into infrastructure where m
 
 OWL does not fork or replace OWS. It wraps, extends, and adds coordination primitives.
 
-## Project Structure
-
-```
-moon/
-  owl/          MCP server + CLI (npm: moonpay-owl)
-    src/        TypeScript source
-    dist/       Built output
-    docs/       skill.md and documentation
-    scripts/    Postinstall setup
-  owly/         Landing page + docs site (Next.js, deployed at owl-moonpay.vercel.app)
-    src/        Pages, components
-    public/     Static assets
-  moo-owl/      Dashboard UI components (Next.js)
-    app/        App routes
-    components/ Shared UI
-```
-
 ## Quick Start
 
 ```bash
@@ -55,23 +38,6 @@ mp wallet create --name main
 npm install -g moonpay-owl
 owl terminal --wallet main
 ```
-
-## MCP Configuration
-
-Add to your agent's MCP config (Claude Code, Cursor, Windsurf, etc.):
-
-```json
-{
-  "mcpServers": {
-    "owl": {
-      "command": "owl",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-35 tools (22 owl + 13 mp) through a single MCP server. No separate `mp mcp` entry needed.
 
 ## Architecture
 
