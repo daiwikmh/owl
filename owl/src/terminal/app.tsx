@@ -28,6 +28,25 @@ ${D}           powered by moonpay${R}
 
 function ln(text = "") { process.stdout.write(text + "\n"); }
 
+function wrapText(text: string, width = 72, indent = "  "): string {
+  const lines: string[] = [];
+  for (const paragraph of text.split("\n")) {
+    if (!paragraph.trim()) { lines.push(""); continue; }
+    const words = paragraph.split(/\s+/);
+    let line = "";
+    for (const word of words) {
+      if (line && (line.length + 1 + word.length) > width) {
+        lines.push(indent + line);
+        line = word;
+      } else {
+        line = line ? line + " " + word : word;
+      }
+    }
+    if (line) lines.push(indent + line);
+  }
+  return lines.join("\n");
+}
+
 function printBanner(wallet: string, agentConfig: AgentConfig | null) {
   ln(OWL_ASCII);
   ln(`  ${D}wallet: ${GR}${wallet}${R}${D}  ·  ${agentConfig ? `${agentConfig.provider}/${agentConfig.model}` : "no agent"}${R}`);
@@ -82,13 +101,38 @@ async function agentSetup(rl: readline.Interface): Promise<AgentConfig | null> {
   const modelInput = (await ask(`${B}${BL}model${R} › [${defaultModel}] `)).trim();
   const model = modelInput || defaultModel;
 
-  const apiKey = (await ask(`${B}${BL}api key${R} › `)).trim();
+  const apiKey = await new Promise<string>((resolve) => {
+    let buf = "";
+    rl.pause();
+    process.stdin.setRawMode?.(true);
+    process.stdout.write(`${B}${BL}api key${R} › `);
+    const onData = (ch: Buffer) => {
+      const c = ch.toString();
+      if (c === "\n" || c === "\r") {
+        process.stdin.removeListener("data", onData);
+        process.stdin.setRawMode?.(false);
+        process.stdout.write("\n");
+        rl.resume();
+        resolve(buf.trim());
+        return;
+      }
+      if (c === "\x7f" || c === "\b") {
+        if (buf.length) { buf = buf.slice(0, -1); process.stdout.write("\b \b"); }
+        return;
+      }
+      if (c === "\x03") { process.exit(0); }
+      buf += c;
+      process.stdout.write("*");
+    };
+    process.stdin.resume();
+    process.stdin.on("data", onData);
+  });
   if (!apiKey) { ln(`${RE}  API key required${R}`); return null; }
 
   ln();
   ln(`  ${D}provider: ${GR}${provider}${R}`);
   ln(`  ${D}model:    ${GR}${model}${R}`);
-  ln(`  ${D}api key:  ${GR}${apiKey.slice(0, 8)}...${R}`);
+  ln(`  ${D}api key:  ${GR}${"*".repeat(apiKey.length)}${R}`);
   ln();
 
   const confirm = (await ask(`${B}${BL}save?${R} › [Y/n] `)).trim().toLowerCase();
@@ -106,7 +150,7 @@ export async function startTerminal(wallet: string) {
 
   let agentConfig = loadAgentConfig();
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  let rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
   const prompt = () =>
     new Promise<string>((resolve, reject) => {
@@ -129,6 +173,9 @@ export async function startTerminal(wallet: string) {
       ln(`${YE}  Skipped. You can run "agent setup" later.${R}`);
       ln();
     }
+    // Recreate readline after raw mode password input
+    rl.close();
+    rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   }
 
   const history: ChatMessage[] = [];
@@ -163,6 +210,8 @@ export async function startTerminal(wallet: string) {
         ln(`${GR}  Agent configured: ${config.provider}/${config.model}${R}`);
         ln();
       }
+      rl.close();
+      rl = readline.createInterface({ input: process.stdin, output: process.stdout });
       continue;
     }
 
@@ -221,7 +270,7 @@ export async function startTerminal(wallet: string) {
         () => process.stdout.write(`${D}  thinking...${R}\n`),
         (name, args) => process.stdout.write(`${D}  ↳  ${MA}${name}${R}${D} ${JSON.stringify(args)}${R}\n`),
         (_name, result) => process.stdout.write(`${D}     ${result.slice(0, 300)}${result.length > 300 ? "…" : ""}${R}\n`),
-        (text) => { ln(); ln(`${B}${GR}owl${R} › ${text}`); ln(); },
+        (text) => { ln(); ln(`${B}${GR}owl${R} ›`); ln(wrapText(text)); ln(); },
         () => {},
         (err) => { ln(`${RE}  Error: ${err}${R}`); ln(); },
       );

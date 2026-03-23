@@ -54,6 +54,10 @@ export async function addAlert(opts: AlertOpts) {
   };
 
   store.addRule(rule);
+
+  const confirmMsg = `OWL Alert Set: ${rule.condition_type} ${rule.condition_value} on ${rule.token} (${rule.chain})`;
+  await dispatch(rule.channels, confirmMsg, rule.webhook_url).catch(() => {});
+
   console.log(`Alert added: ${rule.id}`);
   console.log(`  ${rule.condition_type} ${rule.condition_value} on ${rule.token} (${rule.chain})`);
   console.log(`  Channel: ${opts.channel}`);
@@ -151,6 +155,11 @@ export async function addAlertFromMcp(args: {
   channels: string[];
   webhook_url?: string;
 }) {
+  if (!args.channels || !args.channels.length) {
+    return {
+      content: [{ type: "text" as const, text: JSON.stringify({ error: "channels is required. Ask the user which channel to use: telegram or webhook." }) }],
+    };
+  }
   const missing = args.channels.filter((ch) => !isChannelConfigured(ch, args.webhook_url));
   if (missing.length) {
     return {
@@ -172,6 +181,10 @@ export async function addAlertFromMcp(args: {
   };
 
   store.addRule(rule);
+
+  // Send confirmation to configured channels
+  const confirmMsg = `OWL Alert Set: ${rule.condition_type} ${rule.condition_value} on ${rule.token} (${rule.chain})`;
+  dispatch(rule.channels, confirmMsg, rule.webhook_url).catch(() => {});
 
   return {
     content: [

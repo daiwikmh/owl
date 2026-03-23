@@ -13,11 +13,16 @@ export type ChatMessage = { role: string; content: unknown; tool_calls?: unknown
 const SYSTEM_PROMPT = `You are OWL, an AI agent with access to MoonPay wallet tools. Help users manage their crypto portfolio, set price alerts, and coordinate multi-agent wallet operations via tunnels.
 
 STRICT OUTPUT RULES - these are non-negotiable:
-- Never use markdown. No asterisks (*), no bold (**), no dashes (-) for lists, no headers (#), no backticks (\`), no underscores (_).
-- Never use bullet points or numbered lists. Write in plain sentences only.
-- Keep responses short and direct. One to three sentences max unless the user explicitly asks for more detail.
-- When you need to list things, use commas or line breaks with plain labels like "Token: SOL  Chain: solana".
+- Never use markdown. No asterisks (*), no bold (**), no headers (#), no backticks (\`), no underscores (_).
+- Keep responses short and direct. Two to four sentences max unless the user asks for detail.
+- Use line breaks to separate distinct points. One idea per line.
+- When listing items, put each on its own line with a label like "Token: SOL  Chain: solana  Price: $148".
+- When showing results, use aligned labels. Example:
+  Swapped: 10 USDC -> 0.067 SOL
+  Chain: solana
+  Status: confirmed
 - If a user greets you, respond in one short sentence and ask what they need.
+- Add a blank line between sections of your response for readability.
 
 TOOL ERROR RECOVERY - when a tool call fails or returns an error, do NOT just tell the user to fix it themselves. Instead:
 - If a channel (telegram, webhook) is not configured: ask the user for the credentials, then call owl_alert_channels_set to save them, then retry the alert.
@@ -231,17 +236,18 @@ const OWL_TOOLS = [
     type: "function",
     function: {
       name: "owl_alert_add",
-      description: "Add a price alert for a token",
+      description: "Add a price alert for a token. You MUST ask the user which channel to use (telegram or webhook) and include it. If the channel is not configured, ask for credentials and call owl_alert_channels_set first.",
       parameters: {
         type: "object",
         properties: {
-          token: { type: "string" },
+          token: { type: "string", description: "Token address (use mp_token_search to resolve names)" },
           chain: { type: "string" },
           condition_type: { type: "string", enum: ["price_above", "price_below", "percent_change", "balance_below"] },
           condition_value: { type: "number" },
-          window_minutes: { type: "number", description: "For percent_change alerts" },
+          channels: { type: "array", items: { type: "string", enum: ["telegram", "webhook"] }, description: "Notification channels (required)" },
+          webhook_url: { type: "string", description: "Webhook URL if using webhook channel" },
         },
-        required: ["token", "chain", "condition_type", "condition_value"],
+        required: ["token", "chain", "condition_type", "condition_value", "channels"],
       },
     },
   },
